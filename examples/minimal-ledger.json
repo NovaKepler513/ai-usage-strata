@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "profile": {
+    "label": "My workspace"
+  },
+  "records": [
+    {
+      "date": "2026-07-24",
+      "hours": 2.5,
+      "category": "Research",
+      "confidence": "recorded",
+      "activity_count": 3,
+      "evidence": [
+        {
+          "type": "note",
+          "label": "Daily working note"
+        }
+      ]
+    },
+    {
+      "date": "2026-07-25",
+      "hours": 1.25,
+      "category": "Writing",
+      "confidence": "estimated",
+      "estimate_basis": "Calendar block plus saved outline"
+    }
+  ]
+}

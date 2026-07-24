@@ -1,0 +1,25 @@
+# Release checklist
+
+Run this checklist before a public push, tag, ZIP, or screenshot pack.
+
+1. Work in a fresh repository with no private project history.
+2. Confirm the sample ledger is fictional and no user export is staged.
+3. Run the structural audit:
+
+   ```bash
+   python3 scripts/release_audit.py
+   ```
+
+4. Add your own private project names as local-only audit terms, then run it
+   again. Keep that terms file outside the repository.
+5. Inspect `git status --short` and `git diff --cached --name-only` before the
+   first commit. No export, browser cache, secret, or local data file belongs
+   in the release.
+6. Check that the commit identity is a deliberate public identity, not an
+   automatic global Git setting.
+7. Open `index.html`, import a throwaway ledger, export it, and reset to demo.
+8. After publication, clone the remote repository into a new folder and repeat
+   the audit there. A local draft is not proof of what was published.
+
+The current repository is a preparation only. Creating a public remote and
+pushing it should be a separate, deliberate decision.
