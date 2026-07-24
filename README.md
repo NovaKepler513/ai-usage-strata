@@ -11,7 +11,8 @@ for people who want the useful question — “what did I actually put into this
 
 ## What is included
 
-- A polished static dashboard with a curved ridgeline timeline.
+- The same time-strata reading structure throughout: overview, 3D waterfall
+  ridges, preset views, date marks, weekly allocation, and evidence.
 - Month and all-history views, plus point-level evidence inspection.
 - Automatic category expansion: new categories appear without changing code.
 - Import, export, and reset controls. Imported data stays in the browser.
@@ -32,8 +33,8 @@ for people who want the useful question — “what did I actually put into this
 1. Download or clone this repository.
 2. Open `index.html` in a modern browser. No build step or server is needed.
    On macOS, double-click `启动·AI Usage Strata.command`.
-3. Use the sample data first, then choose “Import ledger” to select your own
-   JSON file.
+3. Use the sample data first, then choose “导入账本” to select your own JSON
+   file.
 4. Click a point on the ridgeline to inspect that day’s evidence.
 
 Your imported ledger is held in browser storage for that browser profile. Use

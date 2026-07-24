@@ -1,261 +1,1035 @@
 (() => {
-  "use strict";
+  const data = window.AI_USAGE_STRATA_REPORT;
+  const root = document.getElementById("report-root");
+  if (!data || !root || !Array.isArray(data.timeline)) return;
 
-  const STORAGE_KEY = "ai-usage-strata-ledger-v1";
-  const app = document.querySelector("#app");
-  const fileInput = document.querySelector("#ledger-file");
-  const palette = ["#3f71a7", "#6fa8ca", "#b4d9e8", "#f5bda6", "#ee765b", "#bd3949"];
-  const storedLedger = readStored();
-  let source = storedLedger ? "imported" : "demo";
-  let ledger = storedLedger || clone(window.AI_USAGE_STRATA_DEMO);
-  let selectedKey = null;
-  let activeMonth = "all";
-  let hitPoints = [];
+  const categoryDefinitions = Array.isArray(data.category_definitions) ? data.category_definitions : [];
+  const observedModules = data.timeline.flatMap((item) => Object.keys(item.modules || {}));
+  const moduleOrder = [...new Set([
+    ...categoryDefinitions.map((item) => item.name),
+    ...observedModules,
+    ...(data.modules || []).map((item) => item.name)
+  ])].filter((name) => name !== "其他");
+  if (observedModules.includes("其他") || (data.modules || []).some((item) => item.name === "其他")) moduleOrder.push("其他");
+  const moduleTone = new Map(moduleOrder.map((name, index) => {
+    const configured = categoryDefinitions.find((item) => item.name === name)?.tone;
+    return [name, `tone-${configured || ((index % 6) + 1)}`];
+  }));
+  const pad = (value) => String(value).padStart(2, "0");
+  const parseISO = (value) => new Date(`${value}T00:00:00`);
+  const iso = (value) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+  const monthKey = (value) => typeof value === "string" ? value.slice(0, 7) : `${value.getFullYear()}-${pad(value.getMonth() + 1)}`;
+  const monthStart = (key) => parseISO(`${key}-01`);
+  const monthEnd = (key) => {
+    const [year, month] = key.split("-").map(Number);
+    return new Date(year, month, 0);
+  };
+  const addDays = (value, amount) => {
+    const next = new Date(value);
+    next.setDate(next.getDate() + amount);
+    return next;
+  };
+  const compact = (value) => {
+    const number = Number(value) || 0;
+    if (number >= 100000000) return `${(number / 100000000).toFixed(1)} 亿`;
+    if (number >= 10000) return `${(number / 10000).toFixed(number >= 100000 ? 0 : 1)} 万`;
+    return Math.round(number).toLocaleString("zh-CN");
+  };
+  const hours = (value) => `${Number(value || 0).toFixed(1)}h`;
+  const percent = (value) => `${Math.round((Number(value) || 0) * 100)}%`;
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"]/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"
+  }[char]));
+  const formatDay = (value) => `${value.getFullYear()}.${pad(value.getMonth() + 1)}.${pad(value.getDate())}`;
+  const formatWeek = (start, end) => `${start.getMonth() + 1}/${start.getDate()}—${end.getMonth() + 1}/${end.getDate()}`;
+  const sum = (items, field) => items.reduce((total, item) => total + (Number(item[field]) || 0), 0);
+  const evidenceHref = ({ date, start, end } = {}) => {
+    if (date) return `evidence.html?date=${encodeURIComponent(date)}`;
+    return `evidence.html?from=${encodeURIComponent(iso(start))}&to=${encodeURIComponent(iso(end))}`;
+  };
 
-  function clone(value) { return JSON.parse(JSON.stringify(value)); }
-  function escapeHtml(value) {
-    return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[character]));
-  }
-  function readStored() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      return validateLedger(parsed).valid ? parsed : null;
-    } catch (_) { return null; }
-  }
-  function saveStored(value) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(value)); } catch (_) { /* The current page still works without persistence. */ }
-  }
-  function removeStored() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (_) { /* Nothing to remove when storage is unavailable. */ }
-  }
-  function isoDate(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value || "") ? value : null; }
-  function numeric(value) { const number = Number(value); return Number.isFinite(number) && number >= 0 ? number : 0; }
-  function validateLedger(value) {
-    if (!value || typeof value !== "object" || !Array.isArray(value.records)) return { valid: false, message: "The file needs a records array." };
-    const invalid = value.records.find((record) => !record || !isoDate(record.date) || !Number.isFinite(Number(record.hours)) || Number(record.hours) < 0);
-    return invalid ? { valid: false, message: "Every record needs an ISO date and non-negative hours." } : { valid: true };
-  }
-  function normalizedRecords() {
-    return ledger.records.map((record, index) => ({
-      ...record,
-      id: `${record.date}-${index}`,
-      hours: numeric(record.hours),
-      input_chars: numeric(record.input_chars),
-      output_chars: numeric(record.output_chars),
-      activity_count: numeric(record.activity_count),
-      category: String(record.category || "Unsorted"),
-      confidence: record.confidence === "estimated" ? "estimated" : "recorded",
-      evidence: Array.isArray(record.evidence) ? record.evidence : []
-    })).sort((a, b) => a.date.localeCompare(b.date));
-  }
-  function months(records) { return [...new Set(records.map((record) => record.date.slice(0, 7)))]; }
-  function visibleRecords(records) { return activeMonth === "all" ? records : records.filter((record) => record.date.startsWith(activeMonth)); }
-  function total(records, field) { return records.reduce((sum, record) => sum + numeric(record[field]), 0); }
-  function formatNumber(value) { return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value || 0); }
-  function formatHours(value) { return `${(value || 0).toFixed(1)}h`; }
-  function readableMonth(value) {
-    if (value === "all") return "All recorded months";
-    return new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(`${value}-01T12:00:00`));
-  }
-  function initials(label) { return label.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "AI"; }
-  function render() {
-    const records = normalizedRecords();
-    const scoped = visibleRecords(records);
-    const periods = months(records);
-    const range = scoped.length ? `${scoped[0].date} — ${scoped.at(-1).date}` : "No records yet";
-    const recorded = scoped.filter((record) => record.confidence === "recorded");
-    const estimated = scoped.filter((record) => record.confidence === "estimated");
-    const profile = ledger.profile?.label || "My workspace";
-    app.innerHTML = `
-      <header class="site-header">
-        <a class="brand" href="#top" aria-label="AI Usage Strata home">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span><em>local-first tool</em><strong>AI Usage Strata</strong><small>Time, evidence, and confidence</small></span>
-        </a>
-        <div class="header-actions">
-          <span class="local-note">Local only · no upload</span>
-          <button class="quiet-button" data-action="export">Export current ledger</button>
+  const historyStart = parseISO(data.history?.start || data.range.start);
+  const historyEnd = parseISO(data.history?.end || data.range.end);
+  const calibration = data.calibration;
+  let selectionStart = parseISO(data.view?.start || data.history?.start || data.range.start);
+  let selectionEnd = parseISO(data.view?.end || data.history?.end || data.range.end);
+  let activeMetric = "time";
+  let cleanupWaterfall = () => {};
+  let redrawWaterfall = () => {};
+
+  const estimateFor = (days) => window.AI_USAGE_STRATA_ESTIMATOR.estimateFor(days, calibration);
+
+  const groupDays = (days, keyFor) => {
+    const groups = new Map();
+    days.forEach((item) => {
+      const key = keyFor(item);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(item);
+    });
+    return groups;
+  };
+
+  const moduleTotals = (days) => {
+    const totals = Object.fromEntries(moduleOrder.map((name) => [name, 0]));
+    days.forEach((item) => {
+      Object.entries(item.modules || {}).forEach(([name, value]) => {
+        totals[name] = (totals[name] || 0) + (Number(value) || 0);
+      });
+    });
+    return totals;
+  };
+
+  const metrics = {
+    time: {
+      label: "和 AI 一起工作的时间",
+      short: "时间",
+      axisLabel: "小时 / 日",
+      peakLabel: "最忙",
+      dailyPhrase: "那天和 AI 一起工作的时间越长",
+      barPhrase: "和 AI 一起工作的时间越长",
+      field: "hoursCenter",
+      range: "timeRange",
+      measured: "measuredHours",
+      unit: "小时",
+      format: hours,
+      rangeFormat: (values) => `${hours(values[0])}—${hours(values[1])}`
+    },
+    input: {
+      label: "你发给 AI 的文字",
+      short: "输入",
+      axisLabel: "输入字数 / 日",
+      peakLabel: "输入最多",
+      dailyPhrase: "那天你发给 AI 的文字越多",
+      barPhrase: "你发给 AI 的文字越多",
+      field: "inputCenter",
+      range: "inputRange",
+      measured: "loggedInput",
+      unit: "字",
+      format: compact,
+      rangeFormat: (values) => `${compact(values[0])}—${compact(values[1])}`
+    },
+    output: {
+      label: "AI 返回的文字",
+      short: "输出",
+      axisLabel: "输出字数 / 日",
+      peakLabel: "的 AI 返回文字最多",
+      dailyPhrase: "那天 AI 返回的文字越多",
+      barPhrase: "AI 返回的文字越多",
+      field: "outputCenter",
+      range: "outputRange",
+      measured: "loggedOutput",
+      unit: "字",
+      format: compact,
+      rangeFormat: (values) => `${compact(values[0])}—${compact(values[1])}`
+    }
+  };
+
+  const ridgePalette = [
+    [69, 111, 158],
+    [103, 157, 195],
+    [188, 214, 230],
+    [231, 235, 234],
+    [246, 194, 171],
+    [232, 112, 88],
+    [188, 61, 70]
+  ];
+  const mixColor = (from, to, amount) => from.map((channel, index) => Math.round(channel + (to[index] - channel) * amount));
+  const ridgeTone = (index, count) => {
+    const progress = count <= 1 ? 0.5 : index / (count - 1);
+    const scaled = progress * (ridgePalette.length - 1);
+    const start = Math.floor(scaled);
+    const end = Math.min(ridgePalette.length - 1, start + 1);
+    return mixColor(ridgePalette[start], ridgePalette[end], scaled - start);
+  };
+  const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
+
+  root.innerHTML = `
+    <div class="report-shell" data-metric="time">
+      <header class="app-bar">
+        <div class="app-identity">
+          <span class="strata-sign" aria-hidden="true">
+            <svg viewBox="0 0 82 52">
+              <path class="sign-plane sign-plane-back" d="M2 42C13 38 17 28 27 29C37 30 40 39 50 34C61 29 65 15 80 11L80 48H2Z"/>
+              <path class="sign-plane sign-plane-mid" d="M2 45C14 42 20 35 30 36C41 38 46 27 57 25C67 24 73 31 80 28L80 48H2Z"/>
+              <path class="sign-line sign-line-front" d="M2 46C15 44 22 40 34 41C47 43 53 35 64 33C72 32 77 36 80 35"/>
+              <circle class="sign-node" cx="64" cy="33" r="2.4"/>
+            </svg>
+          </span>
+          <div class="app-wordmark"><span>LOCAL-FIRST AI TOOL</span><h1>AI Usage Strata</h1><p>你的 AI 用量与工作记录</p></div>
+        </div>
+        <div class="app-actions">
+          <span class="generated-at">${escapeHtml(data.profile?.label || "本地账本")} · 只在本机保存</span>
+          <button class="ledger-action" type="button" data-ledger-action="import">导入账本</button>
+          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">导出</button>
+          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="reset">示例</button>
+          <button class="theme-switch" type="button" aria-label="切换明暗主题" aria-pressed="false"><span></span></button>
         </div>
       </header>
-      <section class="intro" id="top">
-        <div>
-          <p class="eyebrow">${escapeHtml(profile)} · ${source === "demo" ? "fictional demo" : "your local ledger"}</p>
-          <h1>See the shape of your work with AI.</h1>
-          <p class="lede">Curved ridges show when the work gathered momentum. Every point can lead back to a note, a log, or another piece of evidence you chose to keep.</p>
-        </div>
-        <div class="control-card">
-          <span>Ledger source</span>
-          <strong>${source === "demo" ? "Sample data" : "Imported locally"}</strong>
-          <div class="control-row">
-            <button class="primary-button" data-action="import">Import ledger</button>
-            <button class="text-button" data-action="reset">Return to demo</button>
+
+      <main>
+        <section class="command-bar" aria-label="统计范围">
+          <div class="range-selectors">
+            <div class="range-labels"><span>开始月份</span><span>结束月份</span></div>
+            <div class="range-fields">
+              <button id="range-start" type="button" data-picker="start" aria-haspopup="dialog"><b id="start-year"></b><em id="start-month"></em></button>
+              <i aria-hidden="true"></i>
+              <button id="range-end" type="button" data-picker="end" aria-haspopup="dialog"><b id="end-year"></b><em id="end-month"></em></button>
+            </div>
           </div>
-        </div>
-      </section>
-      <section class="scope-bar" aria-label="Time range">
-        <div class="month-scroller" role="tablist" aria-label="Choose time range">
-          <button role="tab" aria-selected="${activeMonth === "all"}" class="${activeMonth === "all" ? "active" : ""}" data-month="all">All</button>
-          ${periods.map((month) => `<button role="tab" aria-selected="${activeMonth === month}" class="${activeMonth === month ? "active" : ""}" data-month="${month}">${month.slice(0, 4)} · ${Number(month.slice(5))}</button>`).join("")}
-        </div>
-        <p>${escapeHtml(readableMonth(activeMonth))}<small>${escapeHtml(range)} · ${scoped.length} recorded days</small></p>
-      </section>
-      <section class="metric-grid" aria-label="Usage summary">
-        ${metricCard("Time with AI", formatHours(total(scoped, "hours")), `${recorded.length} recorded · ${estimated.length} estimated`, "hours")}
-        ${metricCard("Your input", formatNumber(total(scoped, "input_chars")), "Characters you sent", "input")}
-        ${metricCard("AI output", formatNumber(total(scoped, "output_chars")), "Characters returned", "output")}
-        ${metricCard("Activity signals", formatNumber(total(scoped, "activity_count")), "Logged sessions or events", "activity")}
-      </section>
-      <section class="panel ridge-panel">
-        <div class="panel-head ridge-head">
-          <div><p class="eyebrow">Time and intensity</p><h2 id="ridge-title">${peakTitle(scoped)}</h2><p>Each ridge is one month. Height is hours per day; colour moves from lighter to more intense work.</p></div>
-          <div class="legend"><span></span><small>lighter</small><b>→</b><small>more intense</small></div>
-        </div>
-        <div class="chart-wrap"><canvas id="ridge-chart" aria-label="Curved ridgeline chart of AI work hours" role="img"></canvas></div>
-        <div class="chart-foot"><span>Click a small date mark to inspect its evidence.</span><span id="chart-tip">${scoped.length ? "Drag is unnecessary: use the month rail above." : "Import a ledger to begin."}</span></div>
-      </section>
-      <section class="analysis-grid">
-        <section class="panel allocation-panel">
-          <div class="panel-head"><div><p class="eyebrow">Scale and direction</p><h2>Weekly investment</h2><p>Length is total time; colour is the mix of work categories.</p></div></div>
-          <div id="weekly-bars" class="weekly-bars"></div>
+          <div class="range-presets" aria-label="快捷范围">
+            <button type="button" data-preset="all">全部</button>
+            <button type="button" data-preset="current">本月</button>
+            <button type="button" data-preset="four-weeks">近 4 周</button>
+          </div>
+          <p class="selection-reading" id="selection-reading"></p>
         </section>
-        <aside class="panel evidence-panel" id="evidence-panel">
-          <p class="eyebrow">Evidence for this view</p>
-          <h2 id="evidence-title">Choose a date mark</h2>
-          <p id="evidence-copy">Evidence never has to be uploaded. Keep a short label here, and optionally a link that only works in your own local system.</p>
-          <div id="evidence-list" class="evidence-list"></div>
-        </aside>
-      </section>
-      <footer><span>AI Usage Strata · MIT © 2026 Nova Kepler</span><span>Static, local-first, no telemetry</span></footer>`;
-    attachEvents();
-    renderWeeklyBars(scoped);
-    requestAnimationFrame(() => drawRidges(scoped));
-  }
-  function metricCard(label, value, caption, kind) {
-    return `<article class="metric-card metric-${kind}"><span>${label}</span><strong>${value}</strong><small>${caption}</small></article>`;
-  }
-  function peakTitle(records) {
-    if (!records.length) return "No time records in this view";
-    const peak = [...records].sort((a, b) => b.hours - a.hours)[0];
-    return `${peak.date} was the highest recorded peak`;
-  }
-  function attachEvents() {
-    app.querySelectorAll("[data-month]").forEach((button) => button.addEventListener("click", () => { activeMonth = button.dataset.month; selectedKey = null; render(); }));
-    app.querySelector('[data-action="import"]').addEventListener("click", () => fileInput.click());
-    app.querySelector('[data-action="reset"]').addEventListener("click", () => { removeStored(); ledger = clone(window.AI_USAGE_STRATA_DEMO); source = "demo"; activeMonth = "all"; selectedKey = null; render(); });
-    app.querySelector('[data-action="export"]').addEventListener("click", exportLedger);
-  }
-  function drawRidges(scoped) {
-    const canvas = document.querySelector("#ridge-chart");
-    if (!canvas) return;
-    const box = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.max(1, Math.floor(box.width * ratio));
-    canvas.height = Math.max(1, Math.floor(box.height * ratio));
+
+        <section class="overview-section" aria-labelledby="metric-title">
+          <header class="overview-header">
+            <div class="metric-reading" aria-live="polite">
+              <p class="eyebrow">这段时间</p>
+              <div class="metric-heading"><h2 id="metric-title"></h2><span id="metric-status" class="evidence-status"></span></div>
+              <strong id="metric-total"></strong>
+              <p id="metric-scope"></p>
+            </div>
+            <div class="metric-switch" role="group" aria-label="选择主要指标">
+              <button type="button" data-metric="time" aria-pressed="true"><span>时间</span><b id="switch-time"></b></button>
+              <button type="button" data-metric="input" aria-pressed="false"><span>输入</span><b id="switch-input"></b></button>
+              <button type="button" data-metric="output" aria-pressed="false"><span>输出</span><b id="switch-output"></b></button>
+            </div>
+          </header>
+          <div class="metric-context" aria-label="数字来源">
+            <span><small>估算区间</small><b id="metric-range"></b></span>
+            <span><small>已记录</small><b id="metric-measured"></b></span>
+            <span><small>记录覆盖</small><b id="metric-coverage"></b></span>
+          </div>
+        </section>
+
+        <section class="hero-analysis" aria-labelledby="chart-title">
+          <header class="chart-intro">
+            <div class="chart-copy">
+              <p class="eyebrow">什么时候最忙</p>
+              <h2><a id="chart-title" href="#"></a></h2>
+              <p id="chart-subtitle"></p>
+            </div>
+            <div class="chart-key">
+              <span class="ridge-legend"><i aria-hidden="true"></i><span>较早</span><em>→</em><span>较近</span></span>
+              <a id="chart-peak" href="#"></a>
+            </div>
+          </header>
+          <div class="primary-chart" id="primary-chart"></div>
+        </section>
+
+        <section class="weekly-section" aria-labelledby="weekly-title">
+          <header class="section-header">
+            <div>
+              <p class="eyebrow">时间花在哪</p>
+              <h2 id="weekly-title"></h2>
+              <p id="weekly-subtitle"></p>
+            </div>
+          </header>
+          <div class="module-legend" id="module-legend" aria-label="工作分类"></div>
+          <div class="week-table-head" aria-hidden="true"><span id="period-label"></span><span id="week-metric-label"></span><span>投入多少，花在哪</span></div>
+          <div class="weekly-list" id="weekly-list"></div>
+        </section>
+
+        <details class="evidence-panel">
+          <summary><span>这些数字怎么算的</span><small id="evidence-summary"></small></summary>
+          <div class="evidence-list" id="evidence-grid"></div>
+          <div class="method-copy">
+            <p>估算依据：${escapeHtml(data.baseline.range)}。已记录的时间不会被估算改小；估算日期必须在账本里留下原因。</p>
+            <p>这个页面不读取聊天记录、文件或日历。它只展示你主动导入的账本，不把缺失部分包装成准确数字。</p>
+          </div>
+        </details>
+        <dialog class="month-picker" id="month-picker" aria-labelledby="month-picker-title">
+          <header><div><p>选择月份</p><h2 id="month-picker-title"></h2></div><button type="button" id="month-picker-close" aria-label="关闭月份选择">×</button></header>
+          <div class="wheel-picker">
+            <section><span>年份</span><div class="wheel-list" id="picker-years" role="listbox" aria-label="年份"></div></section>
+            <section><span>月份</span><div class="wheel-list wheel-months" id="picker-months" role="listbox" aria-label="月份"></div></section>
+          </div>
+          <p>这里选月份。想看某一天，点图上的日期刻痕。</p>
+        </dialog>
+      </main>
+
+      <footer><span>记录范围 ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}</span><span>数据只留在这台设备 · MIT © Nova Kepler</span></footer>
+    </div>`;
+
+  const shell = root.querySelector(".report-shell");
+  const fileInput = document.getElementById("ledger-file");
+  root.querySelectorAll("[data-ledger-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.dataset.ledgerAction === "import") fileInput?.click();
+      if (button.dataset.ledgerAction === "export") window.AI_USAGE_STRATA_LEDGER?.exportFile();
+      if (button.dataset.ledgerAction === "reset") window.AI_USAGE_STRATA_LEDGER?.reset();
+    });
+  });
+  fileInput?.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (file) window.AI_USAGE_STRATA_LEDGER?.importFile(file);
+    fileInput.value = "";
+  });
+  const startInput = root.querySelector("#range-start");
+  const endInput = root.querySelector("#range-end");
+  const minMonth = monthKey(historyStart);
+  const maxMonth = monthKey(historyEnd);
+
+  const setTheme = (theme) => {
+    document.documentElement.dataset.theme = theme;
+    root.querySelector(".theme-switch")?.setAttribute("aria-pressed", String(theme === "dark"));
+    localStorage.setItem("ai-usage-strata-theme", theme);
+    requestAnimationFrame(() => redrawWaterfall());
+  };
+  setTheme(localStorage.getItem("ai-usage-strata-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  root.querySelector(".theme-switch")?.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+
+  const syncInputs = () => {
+    root.querySelector("#start-year").textContent = selectionStart.getFullYear();
+    root.querySelector("#start-month").textContent = `${pad(selectionStart.getMonth() + 1)} 月`;
+    root.querySelector("#end-year").textContent = selectionEnd.getFullYear();
+    root.querySelector("#end-month").textContent = `${pad(selectionEnd.getMonth() + 1)} 月`;
+  };
+
+  const setSelection = (start, end) => {
+    selectionStart = start < historyStart ? new Date(historyStart) : start;
+    selectionEnd = end > historyEnd ? new Date(historyEnd) : end;
+    if (selectionStart > selectionEnd) selectionEnd = new Date(selectionStart);
+    syncInputs();
+    render();
+  };
+
+  const monthPicker = root.querySelector("#month-picker");
+  const pickerTitle = root.querySelector("#month-picker-title");
+  const pickerYears = root.querySelector("#picker-years");
+  const pickerMonths = root.querySelector("#picker-months");
+  const minYear = historyStart.getFullYear();
+  const maxYear = historyEnd.getFullYear();
+  let pickerTarget = "start";
+  let pickerYear = selectionStart.getFullYear();
+  const monthAvailable = (year, month) => {
+    const key = `${year}-${pad(month)}`;
+    return key >= minMonth && key <= maxMonth;
+  };
+  const renderPicker = () => {
+    const selected = pickerTarget === "start" ? selectionStart : selectionEnd;
+    pickerTitle.textContent = pickerTarget === "start" ? "选择开始月份" : "选择结束月份";
+    pickerYears.innerHTML = Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index).map((year) => `
+      <button type="button" role="option" data-year="${year}" aria-selected="${year === pickerYear}">${year}</button>
+    `).join("");
+    pickerMonths.innerHTML = Array.from({ length: 12 }, (_, index) => index + 1).map((month) => `
+      <button type="button" role="option" data-month="${month}" ${monthAvailable(pickerYear, month) ? "" : "disabled"} aria-selected="${pickerYear === selected.getFullYear() && month === selected.getMonth() + 1}">${pad(month)} 月</button>
+    `).join("");
+    requestAnimationFrame(() => {
+      pickerYears.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
+      pickerMonths.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
+    });
+  };
+  const openPicker = (target) => {
+    pickerTarget = target;
+    pickerYear = (target === "start" ? selectionStart : selectionEnd).getFullYear();
+    renderPicker();
+    if (typeof monthPicker.showModal === "function") monthPicker.showModal();
+    else monthPicker.setAttribute("open", "");
+  };
+  const closePicker = () => {
+    if (typeof monthPicker.close === "function") monthPicker.close();
+    else monthPicker.removeAttribute("open");
+  };
+  const selectMonth = (year, month) => {
+    const key = `${year}-${pad(month)}`;
+    if (!monthAvailable(year, month)) return;
+    if (pickerTarget === "start") {
+      const start = monthStart(key);
+      const end = selectionEnd < start ? (monthEnd(key) > historyEnd ? new Date(historyEnd) : monthEnd(key)) : selectionEnd;
+      setSelection(start, end);
+    } else {
+      const end = monthEnd(key) > historyEnd ? new Date(historyEnd) : monthEnd(key);
+      const start = selectionStart > end ? monthStart(key) : selectionStart;
+      setSelection(start, end);
+    }
+    closePicker();
+  };
+  pickerYears.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-year]");
+    if (!button) return;
+    pickerYear = Number(button.dataset.year);
+    renderPicker();
+  });
+  pickerMonths.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-month]");
+    if (!button || button.disabled) return;
+    selectMonth(pickerYear, Number(button.dataset.month));
+  });
+  root.querySelector("#month-picker-close").addEventListener("click", closePicker);
+  monthPicker.addEventListener("click", (event) => {
+    if (event.target === monthPicker) closePicker();
+  });
+  startInput.addEventListener("click", () => openPicker("start"));
+  endInput.addEventListener("click", () => openPicker("end"));
+
+  const weeklyGroups = (days) => [...groupDays(days, (item) => {
+    const day = parseISO(item.date);
+    return iso(addDays(day, -((day.getDay() + 6) % 7)));
+  }).entries()].map(([key, weekDays]) => ({
+    key,
+    label: formatWeek(parseISO(weekDays[0].date), parseISO(weekDays[weekDays.length - 1].date)),
+    start: parseISO(weekDays[0].date),
+    end: parseISO(weekDays[weekDays.length - 1].date),
+    days: weekDays,
+    summary: estimateFor(weekDays),
+    modules: moduleTotals(weekDays)
+  }));
+
+  const monthlyGroups = (days) => [...groupDays(days, (item) => item.date.slice(0, 7)).entries()].map(([key, monthDays]) => ({
+    key,
+    label: `${Number(key.slice(0, 4))}.${Number(key.slice(5, 7))}`,
+    start: parseISO(monthDays[0].date),
+    end: parseISO(monthDays[monthDays.length - 1].date),
+    days: monthDays,
+    summary: estimateFor(monthDays),
+    modules: moduleTotals(monthDays)
+  }));
+
+  const chartGroups = (days) => {
+    if (days.length <= 62) return { granularity: "按周", slots: 7, items: weeklyGroups(days) };
+    return {
+      granularity: "按月",
+      slots: 31,
+      items: monthlyGroups(days).map((item) => ({ ...item, label: `${Number(item.key.slice(5, 7))}月` }))
+    };
+  };
+
+  const ridgeSeries = (item, granularity, slots, metric) => {
+    const values = Array.from({ length: slots }, () => ({ date: null, value: 0, hasEvidence: false }));
+    item.days.forEach((day) => {
+      const date = parseISO(day.date);
+      const index = granularity === "按月" ? date.getDate() - 1 : (date.getDay() + 6) % 7;
+      values[index] = {
+        date: day.date,
+        value: Number(estimateFor([day])[metric.field]) || 0,
+        hasEvidence: Boolean(
+          Number(day.commits)
+          || Number(day.measured_hours)
+          || Number(day.input_chars)
+          || Number(day.output_chars)
+          || day.evidence?.records?.length
+          || day.evidence?.commits?.length
+          || day.evidence?.files?.length
+        )
+      };
+    });
+    return values;
+  };
+
+  const pointInPolygon = (point, polygon) => {
+    let inside = false;
+    for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index, index += 1) {
+      const currentPoint = polygon[index];
+      const previousPoint = polygon[previous];
+      const intersects = ((currentPoint.y > point.y) !== (previousPoint.y > point.y))
+        && (point.x < (previousPoint.x - currentPoint.x) * (point.y - currentPoint.y) / ((previousPoint.y - currentPoint.y) || 0.0001) + currentPoint.x);
+      if (intersects) inside = !inside;
+    }
+    return inside;
+  };
+
+  const softenProfile = (values, granularity) => {
+    const weights = granularity === "按月" ? [0.06, 0.23, 0.42, 0.23, 0.06] : [0.13, 0.74, 0.13];
+    const radius = Math.floor(weights.length / 2);
+    const softened = values.map((point, index) => weights.reduce((total, weight, offset) => {
+      const source = values[index + offset - radius];
+      return total + (source?.y || 0) * weight;
+    }, 0));
+    const originalMaximum = Math.max(0, ...values.map((point) => point.y));
+    const softenedMaximum = Math.max(0, ...softened);
+    const scale = softenedMaximum ? originalMaximum / softenedMaximum : 1;
+    return values.map((point, index) => ({ ...point, displayY: Math.max(0, softened[index] * scale) }));
+  };
+
+  const smoothProfile = (values, samplesPerSegment) => {
+    if (values.length < 2) return values.map((point) => ({ x: point.x, y: point.displayY }));
+    const deltas = values.slice(0, -1).map((point, index) => {
+      const next = values[index + 1];
+      return (next.displayY - point.displayY) / Math.max(0.0001, next.x - point.x);
+    });
+    const tangents = values.map((point, index) => {
+      if (index === 0) return deltas[0];
+      if (index === values.length - 1) return deltas[deltas.length - 1];
+      return deltas[index - 1] * deltas[index] <= 0 ? 0 : (deltas[index - 1] + deltas[index]) / 2;
+    });
+    deltas.forEach((delta, index) => {
+      if (!delta) {
+        tangents[index] = 0;
+        tangents[index + 1] = 0;
+        return;
+      }
+      const left = tangents[index] / delta;
+      const right = tangents[index + 1] / delta;
+      const length = Math.hypot(left, right);
+      if (length > 3) {
+        const scale = 3 / length;
+        tangents[index] = scale * left * delta;
+        tangents[index + 1] = scale * right * delta;
+      }
+    });
+    const curve = [];
+    values.slice(0, -1).forEach((point, index) => {
+      const next = values[index + 1];
+      const span = next.x - point.x;
+      for (let step = 0; step < samplesPerSegment; step += 1) {
+        const amount = step / samplesPerSegment;
+        const square = amount * amount;
+        const cube = square * amount;
+        const y = (2 * cube - 3 * square + 1) * point.displayY
+          + (cube - 2 * square + amount) * span * tangents[index]
+          + (-2 * cube + 3 * square) * next.displayY
+          + (cube - square) * span * tangents[index + 1];
+        curve.push({ x: point.x + span * amount, y: Math.max(0, y) });
+      }
+    });
+    const last = values[values.length - 1];
+    curve.push({ x: last.x, y: last.displayY });
+    return curve;
+  };
+
+  const mountWaterfallModel = ({ ridges, granularity, slots, metric, maximum }) => {
+    const canvas = root.querySelector("#waterfall-canvas");
+    const resetButton = root.querySelector("#model-reset");
+    const viewButtons = [...root.querySelectorAll("[data-view]")];
+    if (!canvas || !resetButton) return;
     const context = canvas.getContext("2d");
-    context.scale(ratio, ratio);
-    const width = box.width;
-    const height = box.height;
-    context.clearRect(0, 0, width, height);
-    hitPoints = [];
-    const grouped = groupByMonth(scoped);
-    if (!grouped.length) { context.fillStyle = "#7e8a95"; context.font = "15px system-ui"; context.fillText("No data in this time range.", 24, 42); return; }
-    const maxHours = Math.max(...scoped.map((record) => record.hours), 1);
-    const left = 52, right = 36, top = 34, bottom = 44;
-    const layerGap = Math.max(54, Math.min(86, (height - top - bottom) / grouped.length));
-    const chartHeight = Math.max(80, Math.min(190, layerGap * 1.45));
-    const maxDay = 31;
-    context.lineWidth = 1;
-    grouped.forEach((group, index) => {
-      const baseline = height - bottom - index * layerGap;
-      const points = Array.from({ length: maxDay }, (_, day) => {
-        const record = group.records.find((item) => Number(item.date.slice(-2)) === day + 1);
-        const x = left + (day / (maxDay - 1)) * (width - left - right);
-        const y = baseline - (record ? (record.hours / maxHours) * chartHeight : 0);
-        return { x, y, record };
+    const viewPresets = {
+      front: { yaw: 0, pitch: 0, zoom: 1.05, orthographic: true, layerOrder: "recent" },
+      side: { yaw: -0.62, pitch: 0.5, zoom: 1.18, orthographic: false, layerOrder: "depth" },
+      back: { yaw: 0, pitch: 0, zoom: 1.05, orthographic: true, layerOrder: "early" },
+      top: { yaw: -0.5, pitch: 1.04, zoom: 1.0, orthographic: false, layerOrder: "depth" }
+    };
+    const defaults = { ...viewPresets.side };
+    const camera = { ...defaults };
+    const model = ridges.map((ridge, index) => {
+      const tone = ridgeTone(index, ridges.length);
+      const values = softenProfile(ridge.series.map((point, pointIndex) => ({
+        ...point,
+        x: -1.72 + (pointIndex / Math.max(1, slots - 1)) * 3.44,
+        y: (point.value / maximum) * 1.42
+      })), granularity);
+      return {
+        ...ridge,
+        tone,
+        color: colorString(tone),
+        z: ridges.length <= 1 ? 0 : 1.2 - (index / (ridges.length - 1)) * 2.4,
+        values,
+        curve: smoothProfile(values, granularity === "按月" ? 7 : 15)
+      };
+    });
+    const tickIndexes = granularity === "按月" ? [0, 7, 14, 21, 30] : [0, 1, 2, 3, 4, 5, 6];
+    const tickLabels = granularity === "按月" ? ["1", "8", "15", "22", "31"] : ["一", "二", "三", "四", "五", "六", "日"];
+    let hitPoints = [];
+    let hoveredKey = "";
+    let dragging = false;
+    let moved = false;
+    let suppressClick = false;
+    let startX = 0;
+    let startY = 0;
+    let lastX = 0;
+    let lastY = 0;
+    let frame = 0;
+
+    const project = (point, width, height) => {
+      const cosYaw = Math.cos(camera.yaw);
+      const sinYaw = Math.sin(camera.yaw);
+      const cosPitch = Math.cos(camera.pitch);
+      const sinPitch = Math.sin(camera.pitch);
+      const rotatedX = point.x * cosYaw - point.z * sinYaw;
+      const yawDepth = point.x * sinYaw + point.z * cosYaw;
+      const rotatedY = point.y * cosPitch - yawDepth * sinPitch;
+      const depth = point.y * sinPitch + yawDepth * cosPitch;
+      const scale = camera.orthographic
+        ? camera.zoom * Math.min(width, height) * 0.31
+        : camera.zoom * Math.min(width, height) * 1.3 / Math.max(2.4, 4.7 - depth);
+      return {
+        x: width * 0.47 + rotatedX * scale,
+        y: height * 0.68 - rotatedY * scale,
+        depth
+      };
+    };
+
+    const trace = (points, close = false) => {
+      if (!points.length) return;
+      context.beginPath();
+      context.moveTo(points[0].x, points[0].y);
+      points.slice(1).forEach((point) => context.lineTo(point.x, point.y));
+      if (close) context.closePath();
+    };
+
+    const draw = () => {
+      const rectangle = canvas.getBoundingClientRect();
+      const width = Math.max(320, rectangle.width);
+      const height = Math.max(360, rectangle.height);
+      const ratio = Math.min(2, window.devicePixelRatio || 1);
+      const pixelWidth = Math.round(width * ratio);
+      const pixelHeight = Math.round(height * ratio);
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+      }
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, width, height);
+      const styles = getComputedStyle(shell);
+      const ink = styles.getPropertyValue("--ink").trim();
+      const muted = styles.getPropertyValue("--ink-3").trim();
+      const line = styles.getPropertyValue("--line-soft").trim();
+      const paper = styles.getPropertyValue("--paper-strong").trim();
+      const frontZ = model[0]?.z || 0;
+      const backZ = model[model.length - 1]?.z || 0;
+
+      context.lineWidth = 1;
+      context.strokeStyle = line;
+      model.forEach((ridge) => {
+        const baseline = [project({ x: -1.72, y: 0, z: ridge.z }, width, height), project({ x: 1.72, y: 0, z: ridge.z }, width, height)];
+        trace(baseline);
+        context.stroke();
       });
-      context.strokeStyle = "rgba(76, 102, 125, .17)";
-      context.beginPath(); context.moveTo(left, baseline); context.lineTo(width - right, baseline); context.stroke();
-      const color = palette[Math.min(palette.length - 1, Math.round((index / Math.max(1, grouped.length - 1)) * (palette.length - 1)))];
-      const area = points.filter((point) => point.record);
-      if (area.length) {
-        context.beginPath(); context.moveTo(area[0].x, baseline); smoothLine(context, area); context.lineTo(area.at(-1).x, baseline); context.closePath();
-        const fill = context.createLinearGradient(0, baseline - chartHeight, 0, baseline);
-        fill.addColorStop(0, withAlpha(color, .84)); fill.addColorStop(1, withAlpha(color, .17));
-        context.fillStyle = fill; context.fill();
-        context.strokeStyle = withAlpha(color, .88); context.lineWidth = 1.7; context.beginPath(); smoothLine(context, area); context.stroke();
-        area.forEach((point) => {
-          context.fillStyle = point.record.confidence === "estimated" ? "#fffaf4" : color;
-          context.strokeStyle = color; context.lineWidth = 1.6; context.beginPath(); context.arc(point.x, point.y, 3.8, 0, Math.PI * 2); context.fill(); context.stroke();
-          hitPoints.push({ ...point, radius: 13, color });
+      tickIndexes.forEach((tickIndex) => {
+        const x = -1.72 + (tickIndex / Math.max(1, slots - 1)) * 3.44;
+        const depthLine = [project({ x, y: 0, z: frontZ }, width, height), project({ x, y: 0, z: backZ }, width, height)];
+        trace(depthLine);
+        context.stroke();
+      });
+      const faces = model.map((ridge, index) => {
+        const top = ridge.curve.map((point) => project({ x: point.x, y: point.y, z: ridge.z }, width, height));
+        const bottom = ridge.curve.map((point) => project({ x: point.x, y: 0, z: ridge.z }, width, height));
+        const polygon = [...top, ...bottom.slice().reverse()];
+        const averageDepth = top.reduce((total, point) => total + point.depth, 0) / Math.max(1, top.length);
+        const projectedValues = ridge.values.map((point) => project({ x: point.x, y: point.displayY, z: ridge.z }, width, height));
+        const dayPoints = ridge.values.map((point, pointIndex) => {
+          if (!point.date || !point.hasEvidence) return null;
+          const current = projectedValues[pointIndex];
+          const previous = projectedValues[Math.max(0, pointIndex - 1)];
+          const next = projectedValues[Math.min(projectedValues.length - 1, pointIndex + 1)];
+          const deltaX = next.x - previous.x;
+          const deltaY = next.y - previous.y;
+          const length = Math.max(0.001, Math.hypot(deltaX, deltaY));
+          const base = project({ x: point.x, y: 0, z: ridge.z }, width, height);
+          let normalX = -deltaY / length;
+          let normalY = deltaX / length;
+          if (normalX * (base.x - current.x) + normalY * (base.y - current.y) < 0) {
+            normalX *= -1;
+            normalY *= -1;
+          }
+          return {
+            key: `${ridge.key}|${point.date}`,
+            date: point.date,
+            value: point.value,
+            label: ridge.label,
+            tone: ridge.tone,
+            ...current,
+            normalX,
+            normalY,
+            base
+          };
+        }).filter(Boolean);
+        return { ridge, index, top, bottom, polygon, averageDepth, dayPoints };
+      }).sort((left, right) => {
+        if (camera.layerOrder === "recent") return left.index - right.index;
+        if (camera.layerOrder === "early") return right.index - left.index;
+        return left.averageDepth - right.averageDepth;
+      });
+
+      hitPoints = [];
+      faces.forEach((face) => {
+        trace(face.polygon, true);
+        const topY = Math.min(...face.top.map((point) => point.y));
+        const baselineY = Math.max(...face.bottom.map((point) => point.y));
+        const highlight = mixColor(face.ridge.tone, [255, 255, 255], 0.28);
+        const fill = context.createLinearGradient(0, topY, 0, Math.max(topY + 1, baselineY));
+        fill.addColorStop(0, colorString(face.ridge.tone, 0.88));
+        fill.addColorStop(0.48, colorString(face.ridge.tone, 0.72));
+        fill.addColorStop(1, colorString(highlight, 0.36));
+        context.fillStyle = fill;
+        context.globalAlpha = 1;
+        context.fill();
+        context.globalAlpha = 0.94;
+        context.strokeStyle = colorString(face.ridge.tone, 0.9);
+        context.lineWidth = 1.15;
+        context.lineJoin = "round";
+        context.lineCap = "round";
+        trace(face.top);
+        context.stroke();
+        context.globalAlpha = 1;
+        hitPoints.push(...face.dayPoints);
+      });
+
+      model.forEach((ridge, index) => {
+        const listedLabel = camera.orthographic || width < 520;
+        const projectedLabel = listedLabel
+          ? { x: width - (width < 520 ? 72 : 124), y: 78 + index * (width < 520 ? 34 : 24) }
+          : project({ x: 1.88, y: 0.03, z: ridge.z }, width, height);
+        const labelPoint = listedLabel
+          ? projectedLabel
+          : { ...projectedLabel, x: Math.min(width - 116, projectedLabel.x) };
+        context.strokeStyle = ridge.color;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(labelPoint.x - (listedLabel ? 18 : 0), labelPoint.y - 4);
+        context.lineTo(labelPoint.x - (listedLabel ? 7 : 0), labelPoint.y - 4);
+        if (listedLabel) context.stroke();
+        context.fillStyle = ink;
+        context.font = `500 ${Math.max(10, Math.min(12, width / 82))}px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif`;
+        context.textAlign = "left";
+        context.fillText(ridge.label, labelPoint.x, labelPoint.y - (listedLabel ? 0 : 5));
+        if (!camera.orthographic || width < 520) {
+          context.fillStyle = muted;
+          context.font = `400 ${Math.max(9, Math.min(10, width / 96))}px "SFMono-Regular", Menlo, monospace`;
+          context.fillText(metric.format(ridge.summary[metric.field]), labelPoint.x, labelPoint.y + 9);
+        }
+      });
+
+      const frontRidge = model[0];
+      if (frontRidge) {
+        context.fillStyle = muted;
+        context.font = `400 ${Math.max(9, Math.min(10, width / 96))}px "SFMono-Regular", Menlo, monospace`;
+        context.textAlign = "center";
+        tickIndexes.forEach((tickIndex, index) => {
+          const x = -1.72 + (tickIndex / Math.max(1, slots - 1)) * 3.44;
+          const point = project({ x, y: 0, z: frontRidge.z }, width, height);
+          context.fillText(tickLabels[index], point.x, point.y + 20);
         });
       }
-      context.fillStyle = "#5c6670"; context.font = "600 12px system-ui"; context.fillText(group.label, width - right + 8, baseline + 4);
+
+      hitPoints.forEach((point) => {
+        const hovered = point.key === hoveredKey;
+        if (hovered && Math.abs(point.base.y - point.y) > 3) {
+          context.beginPath();
+          context.moveTo(point.base.x, point.base.y);
+          context.lineTo(point.x, point.y);
+          context.strokeStyle = colorString(point.tone, 0.22);
+          context.lineWidth = 0.8;
+          context.stroke();
+        }
+        const outward = hovered ? 2.2 : 0.45;
+        const inward = hovered ? 9 : (point.value ? 4.8 : 3.2);
+        const startX = point.x - point.normalX * outward;
+        const startY = point.y - point.normalY * outward;
+        const endX = point.x + point.normalX * inward;
+        const endY = point.y + point.normalY * inward;
+        const incisionTone = mixColor(point.tone, [28, 33, 39], 0.24);
+        context.beginPath();
+        context.moveTo(startX, startY);
+        context.lineTo(endX, endY);
+        context.strokeStyle = hovered ? colorString(point.tone, 0.98) : colorString(incisionTone, point.value ? 0.72 : 0.42);
+        context.lineWidth = hovered ? 3.6 : 2;
+        context.lineCap = "round";
+        context.stroke();
+        context.beginPath();
+        context.moveTo(startX, startY);
+        context.lineTo(endX, endY);
+        context.strokeStyle = paper;
+        context.globalAlpha = hovered ? 0.92 : (point.value ? 0.62 : 0.34);
+        context.lineWidth = hovered ? 1.15 : 0.7;
+        context.stroke();
+        context.globalAlpha = 1;
+      });
+
+      const rulerX = 18;
+      const rulerTop = height * 0.24;
+      const rulerBottom = height * 0.69;
+      context.strokeStyle = colorString(ridgePalette[1], 0.42);
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(rulerX, rulerTop);
+      context.lineTo(rulerX, rulerBottom);
+      context.stroke();
+      context.font = `500 ${Math.max(9, Math.min(10, width / 96))}px "SFMono-Regular", Menlo, monospace`;
+      context.textAlign = "left";
+      [0, 0.5, 1].forEach((amount) => {
+        const y = rulerBottom - (rulerBottom - rulerTop) * amount;
+        context.beginPath();
+        context.moveTo(rulerX, y);
+        context.lineTo(rulerX + 5, y);
+        context.stroke();
+        context.fillStyle = muted;
+        context.fillText(amount === 0 ? "0" : metric.format(maximum * amount), rulerX + 9, y + 3);
+      });
+      context.fillStyle = ink;
+      context.font = `600 ${Math.max(9, Math.min(10, width / 96))}px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif`;
+      context.fillText(metric.axisLabel, rulerX, rulerTop - 13);
+
+      const hoveredPoint = hitPoints.find((point) => point.key === hoveredKey);
+      if (hoveredPoint) {
+        const date = parseISO(hoveredPoint.date);
+        const label = `${date.getMonth() + 1}月${date.getDate()}日 · ${metric.format(hoveredPoint.value)} · 点击看当天记录`;
+        context.font = `500 ${Math.max(10, Math.min(11, width / 92))}px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif`;
+        const tooltipWidth = context.measureText(label).width + 22;
+        const tooltipX = Math.max(8, Math.min(width - tooltipWidth - 8, hoveredPoint.x + 12));
+        const tooltipY = Math.max(12, hoveredPoint.y - 38);
+        context.fillStyle = paper;
+        context.strokeStyle = colorString(hoveredPoint.tone, 0.55);
+        context.lineWidth = 1;
+        context.beginPath();
+        context.roundRect(tooltipX, tooltipY, tooltipWidth, 28, 8);
+        context.fill();
+        context.stroke();
+        context.fillStyle = ink;
+        context.textAlign = "left";
+        context.fillText(label, tooltipX + 11, tooltipY + 18);
+      }
+    };
+
+    const scheduleDraw = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        draw();
+      });
+    };
+    redrawWaterfall = scheduleDraw;
+
+    const pointerPosition = (event) => {
+      const rectangle = canvas.getBoundingClientRect();
+      return { x: event.clientX - rectangle.left, y: event.clientY - rectangle.top };
+    };
+    const onPointerDown = (event) => {
+      suppressClick = false;
+      dragging = true;
+      moved = false;
+      startX = lastX = event.clientX;
+      startY = lastY = event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+      canvas.classList.add("is-dragging");
+    };
+    const onPointerMove = (event) => {
+      if (!dragging) {
+        const pointer = pointerPosition(event);
+        const hit = hitPoints.slice().reverse().map((point) => ({
+          ...point,
+          distance: Math.hypot(pointer.x - point.x, pointer.y - point.y)
+        })).sort((left, right) => left.distance - right.distance)[0];
+        const nextKey = hit && hit.distance <= 12 ? hit.key : "";
+        canvas.classList.toggle("has-point", Boolean(nextKey));
+        if (nextKey !== hoveredKey) {
+          hoveredKey = nextKey;
+          scheduleDraw();
+        }
+        return;
+      }
+      const deltaX = event.clientX - lastX;
+      const deltaY = event.clientY - lastY;
+      if (Math.abs(event.clientX - startX) + Math.abs(event.clientY - startY) > 5) moved = true;
+      if (moved && camera.orthographic) {
+        camera.orthographic = false;
+        camera.pitch = 0.18;
+        camera.layerOrder = "depth";
+        viewButtons.forEach((button) => button.setAttribute("aria-pressed", "false"));
+      }
+      camera.yaw += deltaX * 0.008;
+      camera.pitch = Math.max(-0.05, Math.min(1.15, camera.pitch + deltaY * 0.006));
+      lastX = event.clientX;
+      lastY = event.clientY;
+      scheduleDraw();
+    };
+    const onPointerUp = (event) => {
+      if (!dragging) return;
+      dragging = false;
+      suppressClick = moved;
+      canvas.classList.remove("is-dragging");
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    };
+    const onClick = (event) => {
+      if (suppressClick) {
+        suppressClick = false;
+        return;
+      }
+      const pointer = pointerPosition(event);
+      const point = hitPoints.slice().reverse().map((item) => ({
+        ...item,
+        distance: Math.hypot(pointer.x - item.x, pointer.y - item.y)
+      })).sort((left, right) => left.distance - right.distance)[0];
+      if (point?.date && point.distance <= 12) window.location.assign(evidenceHref({ date: point.date }));
+    };
+    const onPointerLeave = () => {
+      if (dragging || !hoveredKey) return;
+      hoveredKey = "";
+      canvas.classList.remove("has-point");
+      scheduleDraw();
+    };
+    const onWheel = (event) => {
+      event.preventDefault();
+      camera.zoom = Math.max(0.68, Math.min(2.2, camera.zoom * Math.exp(-event.deltaY * 0.001)));
+      scheduleDraw();
+    };
+    const setView = (name) => {
+      Object.assign(camera, viewPresets[name] || defaults);
+      viewButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.view === name)));
+      scheduleDraw();
+    };
+    const resetView = () => setView("side");
+    const viewHandlers = viewButtons.map((button) => {
+      const handler = () => setView(button.dataset.view);
+      button.addEventListener("click", handler);
+      return [button, handler];
     });
-    context.fillStyle = "#74808c"; context.font = "12px system-ui";
-    [1, 8, 15, 22, 29].forEach((day) => { const x = left + ((day - 1) / (maxDay - 1)) * (width - left - right); context.fillText(String(day), x - 4, height - 14); });
-    canvas.onclick = (event) => {
-      const bounds = canvas.getBoundingClientRect();
-      const x = event.clientX - bounds.left; const y = event.clientY - bounds.top;
-      const target = hitPoints.map((point) => ({ point, distance: Math.hypot(point.x - x, point.y - y) })).sort((a, b) => a.distance - b.distance)[0];
-      if (target?.distance <= target.point.radius) { selectedKey = target.point.record.id; showEvidence(target.point.record); }
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
+    canvas.addEventListener("pointerleave", onPointerLeave);
+    canvas.addEventListener("click", onClick);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    canvas.addEventListener("dblclick", resetView);
+    resetButton.addEventListener("click", resetView);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleDraw);
+    observer?.observe(canvas);
+    window.addEventListener("resize", scheduleDraw);
+    scheduleDraw();
+
+    cleanupWaterfall = () => {
+      observer?.disconnect();
+      viewHandlers.forEach(([button, handler]) => button.removeEventListener("click", handler));
+      window.removeEventListener("resize", scheduleDraw);
+      if (frame) cancelAnimationFrame(frame);
+      redrawWaterfall = () => {};
     };
-  }
-  function smoothLine(context, points) {
-    context.moveTo(points[0].x, points[0].y);
-    for (let index = 1; index < points.length - 1; index += 1) {
-      const midpointX = (points[index].x + points[index + 1].x) / 2;
-      const midpointY = (points[index].y + points[index + 1].y) / 2;
-      context.quadraticCurveTo(points[index].x, points[index].y, midpointX, midpointY);
+    setView("side");
+  };
+
+  const renderPrimaryChart = (days) => {
+    cleanupWaterfall();
+    const metric = metrics[activeMetric];
+    const { granularity, slots, items } = chartGroups(days);
+    const ridges = items.map((item) => ({ ...item, series: ridgeSeries(item, granularity, slots, metric) }));
+    const visiblePoints = ridges.flatMap((ridge) => ridge.series.filter((point) => point.date));
+    const maximum = Math.max(1, ...visiblePoints.map((point) => point.value));
+    const peakPoint = visiblePoints.reduce((peak, point) => point.value > (peak?.value || 0) ? point : peak, null);
+    const chartTitle = root.querySelector("#chart-title");
+    const chartPeak = root.querySelector("#chart-peak");
+    chartTitle.textContent = peakPoint?.value
+      ? `${Number(peakPoint.date.slice(5, 7))} 月 ${Number(peakPoint.date.slice(8, 10))} 日${metric.peakLabel}`
+      : "这段时间还没有记录";
+    chartTitle.href = peakPoint?.date ? evidenceHref({ date: peakPoint.date }) : "#";
+    root.querySelector("#chart-subtitle").textContent = granularity === "按月"
+      ? `每层是一个月，横向看日期；山峰越高，${metric.dailyPhrase}。`
+      : `每层是一周，横向从周一排到周日；山峰越高，${metric.dailyPhrase}。`;
+    chartPeak.textContent = peakPoint?.value
+      ? `当天最高 ${metric.format(peakPoint.value)}`
+      : "还没有记录";
+    chartPeak.href = peakPoint?.date ? evidenceHref({ date: peakPoint.date }) : "#";
+    if (!ridges.length) {
+      root.querySelector("#primary-chart").innerHTML = `<p class="empty-state">这段时间还没有记录。</p>`;
+      return;
     }
-    if (points.length > 1) context.lineTo(points.at(-1).x, points.at(-1).y);
-  }
-  function withAlpha(hex, alpha) {
-    const raw = hex.replace("#", ""); const value = Number.parseInt(raw, 16);
-    return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
-  }
-  function groupByMonth(records) {
-    return months(records).map((month) => ({ label: month, records: records.filter((record) => record.date.startsWith(month)) })).reverse();
-  }
-  function weekKey(date) {
-    const value = new Date(`${date}T12:00:00`); const day = (value.getDay() + 6) % 7; value.setDate(value.getDate() - day); return value.toISOString().slice(0, 10);
-  }
-  function renderWeeklyBars(records) {
-    const root = document.querySelector("#weekly-bars");
-    const weeks = [...new Set(records.map((record) => weekKey(record.date)))].map((key) => ({ key, records: records.filter((record) => weekKey(record.date) === key) }));
-    const categories = [...new Set(records.map((record) => record.category))];
-    const largest = Math.max(...weeks.map((week) => total(week.records, "hours")), 1);
-    root.innerHTML = weeks.length ? weeks.slice(-7).reverse().map((week) => {
-      const amount = total(week.records, "hours");
-      const segments = categories.map((category, index) => ({ category, value: total(week.records.filter((record) => record.category === category), "hours"), color: palette[index % palette.length] })).filter((segment) => segment.value);
-      const top = [...segments].sort((a, b) => b.value - a.value)[0];
-      return `<div class="week-row"><div><strong>${week.key}</strong><small>${week.records.length} active days</small></div><b>${formatHours(amount)}</b><div class="bar-track" aria-label="${escapeHtml(week.key)} ${formatHours(amount)}">${segments.map((segment) => `<span style="width:${(segment.value / largest) * 100}%;background:${segment.color}" title="${escapeHtml(segment.category)} ${formatHours(segment.value)}"></span>`).join("")}</div><small class="top-category">${escapeHtml(top?.category || "")}</small></div>`;
-    }).join("") : `<p class="empty-state">No weekly records in this view.</p>`;
-  }
-  function showEvidence(record) {
-    const title = document.querySelector("#evidence-title"); const copy = document.querySelector("#evidence-copy"); const list = document.querySelector("#evidence-list");
-    title.textContent = `${record.date} · ${formatHours(record.hours)}`;
-    const quality = record.confidence === "estimated" ? `Estimated — ${record.estimate_basis || "basis not yet recorded"}` : "Recorded directly in the ledger";
-    copy.textContent = `${quality}. ${record.activity_count || 0} activity signals · ${record.category}.`;
-    list.innerHTML = record.evidence.length ? record.evidence.map((item) => item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener"><span>${escapeHtml(item.type || "evidence")}</span><strong>${escapeHtml(item.label || "Open record")}</strong></a>` : `<div><span>${escapeHtml(item.type || "evidence")}</span><strong>${escapeHtml(item.label || "Untitled record")}</strong></div>`).join("") : `<div><span>evidence</span><strong>No linked evidence was added.</strong></div>`;
-    document.querySelector("#evidence-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-  function exportLedger() {
-    const blob = new Blob([JSON.stringify(ledger, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "ai-usage-ledger.json"; anchor.click(); URL.revokeObjectURL(url);
-  }
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const next = JSON.parse(String(reader.result)); const checked = validateLedger(next);
-        if (!checked.valid) throw new Error(checked.message);
-        ledger = next; source = "imported"; activeMonth = "all"; selectedKey = null; saveStored(next); render();
-      } catch (error) { window.alert(`Could not import this ledger: ${error.message}`); }
-      fileInput.value = "";
-    };
-    reader.readAsText(file);
+    root.querySelector("#primary-chart").innerHTML = `
+      <div class="waterfall-model">
+        <div class="view-presets" role="group" aria-label="预制视角">
+          <button type="button" data-view="front" aria-pressed="false">前视叠合</button>
+          <button type="button" data-view="side" aria-pressed="true">侧视</button>
+          <button type="button" data-view="back" aria-pressed="false">后视叠合</button>
+          <button type="button" data-view="top" aria-pressed="false">俯视</button>
+        </div>
+        <canvas id="waterfall-canvas" role="img" aria-label="${escapeHtml(metric.label)}瀑布图。可以切换视角，也可以拖动旋转、滚轮缩放；点击山脊上的日期刻痕可查看当天记录。"></canvas>
+        <div class="model-hud"><span>把鼠标移到日期刻痕上看数值 · 点击看当天记录</span><button id="model-reset" type="button">回到侧视</button></div>
+      </div>`;
+    mountWaterfallModel({ ridges, granularity, slots, metric, maximum });
+  };
+
+  const renderWeekly = (days) => {
+    const metric = metrics[activeMetric];
+    const useMonths = days.length > 62;
+    const periods = (useMonths ? monthlyGroups(days) : weeklyGroups(days)).reverse();
+    const maximum = Math.max(1, ...periods.map((period) => period.summary[metric.field]));
+    const selectedModules = moduleTotals(days);
+    const activeModules = moduleOrder.filter((name) => selectedModules[name] > 0);
+    root.querySelector("#weekly-title").textContent = useMonths ? "按月看：投入多少，花在哪" : "按周看：投入多少，花在哪";
+    root.querySelector("#weekly-subtitle").textContent = `条带越长，${metric.barPhrase}；颜色表示主要花在哪类工作上。`;
+    root.querySelector("#period-label").textContent = useMonths ? "月份" : "周次";
+    root.querySelector("#module-legend").innerHTML = activeModules.map((name) => `<span><i class="${moduleTone.get(name)}"></i>${escapeHtml(name)}</span>`).join("");
+    root.querySelector("#week-metric-label").textContent = `${metric.short}投入`;
+    root.querySelector("#weekly-list").innerHTML = periods.length ? periods.map((period) => {
+      const totalTouches = Object.values(period.modules).reduce((total, value) => total + value, 0);
+      const segments = activeModules.filter((name) => period.modules[name] > 0).map((name) => {
+        const share = totalTouches ? period.modules[name] / totalTouches : 0;
+        return `<span class="week-segment ${moduleTone.get(name)}" style="--share:${share * 100}" aria-label="${escapeHtml(name)} ${percent(share)}"></span>`;
+      }).join("");
+      const leading = Object.entries(period.modules).sort((a, b) => b[1] - a[1])[0];
+      const leadingLabel = leading && leading[1] > 0 ? leading[0] : "没有分类";
+      const magnitude = period.summary[metric.field] / maximum;
+      return `<article class="week-row">
+        <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} 个活跃日 · ${period.summary.commits} 条活动 · 看记录</small></a>
+        <b class="week-metric">${escapeHtml(metric.format(period.summary[metric.field]))}</b>
+        <div class="week-allocation">
+          <div class="week-scale"><div class="week-track" style="--magnitude:${Math.max(magnitude ? 4 : 0, magnitude * 100)}%" role="img" aria-label="${escapeHtml(period.label)} ${metric.short}${escapeHtml(metric.format(period.summary[metric.field]))}；主要花在 ${escapeHtml(leadingLabel)}">${segments || "<span class=\"week-empty\"></span>"}</div></div>
+          <small>${escapeHtml(leadingLabel)}</small>
+        </div>
+      </article>`;
+    }).join("") : `<p class="empty-state">这段时间还没有记录。</p>`;
+  };
+
+  const renderEvidence = (summary) => {
+    const rows = [
+      { label: "导入的活动记录", state: "已记录", tone: "measured", detail: `${summary.commits} 条活动，分布在 ${summary.activeDays} 个活跃日。` },
+      { label: "已记录的 AI 用量", state: "已记录", tone: "measured", detail: `记录到 ${hours(summary.measuredHours)}；你的输入 ${compact(summary.loggedInput)}，AI 返回 ${compact(summary.loggedOutput)}。` },
+      { label: "没有完整记录的部分", state: "估算", tone: "estimated", detail: `已记录数据覆盖 ${percent(summary.coverage)} 的活跃日；缺失部分只显示估算范围。` }
+    ];
+    root.querySelector("#evidence-summary").textContent = `${percent(summary.coverage)} 的活跃日有已记录用量`;
+    root.querySelector("#evidence-grid").innerHTML = rows.map((item) => `<div class="evidence-row evidence-${item.tone}"><strong>${item.label}</strong><span>${item.state}</span><p>${item.detail}</p></div>`).join("");
+  };
+
+  const renderPresetState = () => {
+    root.querySelectorAll("[data-preset]").forEach((button) => {
+      let active = false;
+      if (button.dataset.preset === "all") active = iso(selectionStart) === iso(historyStart) && iso(selectionEnd) === iso(historyEnd);
+      if (button.dataset.preset === "current") active = iso(selectionStart) === iso(monthStart(maxMonth)) && iso(selectionEnd) === iso(historyEnd);
+      if (button.dataset.preset === "four-weeks") active = iso(selectionStart) === iso(addDays(historyEnd, -27)) && iso(selectionEnd) === iso(historyEnd);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  };
+
+  const render = () => {
+    const days = data.timeline.filter((item) => {
+      const day = parseISO(item.date);
+      return day >= selectionStart && day <= selectionEnd;
+    });
+    const summary = estimateFor(days);
+    const metric = metrics[activeMetric];
+    const metricRange = summary[metric.range];
+    const metricMeasured = summary[metric.measured];
+    const isEstimated = Math.abs(metricRange[0] - metricMeasured) > 0.001 || Math.abs(metricRange[1] - metricMeasured) > 0.001;
+    shell.dataset.metric = activeMetric;
+    root.querySelector("#selection-reading").textContent = `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${days.length} 天`;
+    root.querySelector("#metric-title").textContent = metric.label;
+    const metricStatus = root.querySelector("#metric-status");
+    metricStatus.textContent = isEstimated ? "估算" : "已记录";
+    metricStatus.className = `evidence-status ${isEstimated ? "evidence-estimate" : "evidence-confirmed"}`;
+    root.querySelector("#metric-total").textContent = metric.format(summary[metric.field]);
+    root.querySelector("#metric-scope").textContent = `${summary.activeDays} 个活跃日 · ${summary.commits} 条活动`;
+    root.querySelector("#metric-range").textContent = metric.rangeFormat(metricRange);
+    root.querySelector(".metric-context small").textContent = isEstimated ? "估算范围" : "统计值";
+    root.querySelector("#metric-measured").textContent = metric.format(summary[metric.measured]);
+    root.querySelector("#metric-coverage").textContent = percent(summary.coverage);
+    root.querySelector("#switch-time").textContent = hours(summary.hoursCenter);
+    root.querySelector("#switch-input").textContent = compact(summary.inputCenter);
+    root.querySelector("#switch-output").textContent = compact(summary.outputCenter);
+    root.querySelectorAll(".metric-switch [data-metric]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.metric === activeMetric)));
+    renderPresetState();
+    renderPrimaryChart(days);
+    renderWeekly(days);
+    renderEvidence(summary);
+  };
+
+  root.querySelectorAll("[data-preset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.dataset.preset === "all") setSelection(new Date(historyStart), new Date(historyEnd));
+      if (button.dataset.preset === "current") setSelection(monthStart(maxMonth), new Date(historyEnd));
+      if (button.dataset.preset === "four-weeks") setSelection(addDays(historyEnd, -27), new Date(historyEnd));
+    });
   });
-  window.addEventListener("resize", () => requestAnimationFrame(() => drawRidges(visibleRecords(normalizedRecords()))));
+  root.querySelectorAll(".metric-switch [data-metric]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeMetric = button.dataset.metric;
+      render();
+    });
+  });
+
+  syncInputs();
   render();
 })();
