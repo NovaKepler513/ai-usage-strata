@@ -299,7 +299,6 @@
           <div class="builder-actions">
             <button class="ledger-action ledger-action-quiet" type="button" data-builder-add>${t("addRecord")}</button>
             <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("importTable")}</button>
-            <button class="ledger-action ledger-action-quiet" type="button" data-builder-cancel>${t("builderCancel")}</button>
             <button class="ledger-action" type="button" data-builder-save>${t("saveLedger")}</button>
           </div>
         </div>
@@ -384,7 +383,6 @@
   });
   root.querySelector("[data-guide-close]")?.addEventListener("click", () => root.querySelector("#ledger-guide")?.close());
   root.querySelector("[data-builder-add]")?.addEventListener("click", () => addBuilderRow());
-  root.querySelector("[data-builder-cancel]")?.addEventListener("click", () => builder?.close());
   root.querySelector("[data-builder-close]")?.addEventListener("click", () => builder?.close());
   builder?.addEventListener("click", (event) => {
     const bounds = builder.getBoundingClientRect();
