@@ -175,7 +175,6 @@
           <div class="app-wordmark"><span>LOCAL-FIRST AI TOOL</span><h1>AI Usage Strata</h1><p>${t("productSubtitle")}</p></div>
         </div>
         <div class="app-actions">
-          <span class="generated-at">${escapeHtml(data.profile?.label || t("emptyLedger"))} · ${t("localOnly")}</span>
           ${ledgerActions}
           <button class="ledger-action ledger-action-quiet language-switch" type="button" data-language-switch>${t("language")}</button>
           <button class="theme-switch" type="button" aria-label="${t("switchTheme")}" aria-pressed="false"><span></span></button>
@@ -270,7 +269,12 @@
         </details>
       </main>
 
-      <footer><span>${hasRecords ? `${t("ledgerRange")} ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}` : t("noDateRange")}</span><span>${t("privacyFooter")}</span></footer>
+      <footer class="app-footer">
+        <span class="footer-credit">
+          <span class="butterfly-seal" aria-hidden="true"><i></i></span>
+          <span>${t("copyright")}</span>
+        </span>
+      </footer>
       <dialog class="ledger-guide" id="ledger-guide">
         <div>
           <p class="eyebrow">${t("ledgerGuide")}</p>

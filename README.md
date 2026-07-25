@@ -117,4 +117,4 @@ python3 scripts/validate_ledger.py examples/minimal-ledger.json
 python3 scripts/release_audit.py
 ```
 
-MIT © 2026 Nova Kepler. The included Atlas Lab ledger and every screenshot in this README are fictional.
+Code: MIT © 2026 Nova Kepler. The included Atlas Lab ledger and every screenshot in this README are fictional. The hand-drawn butterfly authorship mark has its own [asset notice](ASSET-LICENSE.md).

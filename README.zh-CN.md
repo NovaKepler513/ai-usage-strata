@@ -117,4 +117,4 @@ python3 scripts/validate_ledger.py examples/minimal-ledger.json
 python3 scripts/release_audit.py
 ```
 
-MIT © 2026 Nova Kepler。README 中的 Atlas Lab 账本与所有截图均为虚构示例。
+代码采用 MIT License © 2026 Nova Kepler。README 中的 Atlas Lab 账本与所有截图均为虚构示例；手绘蝴蝶署名印的使用边界见[视觉资产说明](ASSET-LICENSE.md)。
