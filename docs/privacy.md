@@ -4,7 +4,7 @@
 
 - Reads the JSON file you deliberately choose in the browser.
 - Stores that imported copy in the current browser’s local storage.
-- Lets you export that same copy or reset the app back to the fictional demo.
+- Lets you download that same copy, clear it back to an empty ledger, or load the separate fictional example only when you ask to see it.
 
 ## What the app does not do
 

@@ -1,6 +1,6 @@
 # AI Usage Strata
 
-[简体中文](README.zh-CN.md) · [Live demo](https://novakepler513.github.io/ai-usage-strata/) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md)
+[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md)
 
 > A local-first visual ledger for the time, text, and work you do with AI.
 
@@ -54,8 +54,8 @@ The tool will never quietly fill a blank day and present it as a fact.
 
 ## Try it in three minutes
 
-1. Open the [live fictional demo](https://novakepler513.github.io/ai-usage-strata/), or clone this repository.
-2. Explore the demo: rotate the waterfall, choose a category, change Time to Input or Output, and open a date mark.
+1. Open the [live app](https://novakepler513.github.io/ai-usage-strata/). It starts with no data, by design.
+2. Choose “View example” to explore a fictional Atlas Lab case: rotate the waterfall, choose a category, change Time to Input or Output, and open a date mark.
 3. Import a copy of [`examples/minimal-ledger.json`](examples/minimal-ledger.json).
 4. Replace the fictional rows with your own records. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
 5. Export your ledger for a portable backup whenever you want.

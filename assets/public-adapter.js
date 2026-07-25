@@ -2,7 +2,13 @@
   "use strict";
 
   const STORAGE_KEY = "ai-usage-strata-ledger-v1";
-  const source = window.AI_USAGE_STRATA_DEMO;
+  const SOURCE_KEY = "ai-usage-strata-ledger-source-v1";
+  const demoLedger = window.AI_USAGE_STRATA_DEMO;
+  const emptyLedger = {
+    schema_version: "1.0",
+    profile: { label: "" },
+    records: []
+  };
   const t = window.AI_USAGE_STRATA_I18N?.t || ((key) => key);
   const pad = (value) => String(value).padStart(2, "0");
   const iso = (value) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
@@ -26,10 +32,22 @@
       return validate(stored) ? null : stored;
     } catch (_) { return null; }
   };
-  const write = (ledger) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ledger)); } catch (_) {} };
-  const remove = () => { try { localStorage.removeItem(STORAGE_KEY); } catch (_) {} };
+  const write = (ledger, source) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ledger));
+      localStorage.setItem(SOURCE_KEY, source);
+    } catch (_) {}
+  };
+  const remove = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SOURCE_KEY);
+    } catch (_) {}
+  };
 
-  const ledger = read() || clone(source);
+  const storedLedger = read();
+  const source = storedLedger ? (localStorage.getItem(SOURCE_KEY) || "imported") : "empty";
+  const ledger = storedLedger || clone(emptyLedger);
   const records = ledger.records.map((record, index) => ({
     ...record,
     id: `${record.date}-${index}`,
@@ -100,7 +118,7 @@
     view: { start, end },
     history: { start, end, days: timeline.length },
     reference_window: referenceWindow,
-    profile: { label: ledger.profile?.label || "我的 AI 用量账本", imported: Boolean(read()) },
+    profile: { label: ledger.profile?.label || t("emptyLedger"), imported: source === "imported", source, has_records: records.length > 0 },
     git: { commits: activitySignals, semantic_commits: records.length, active_days: activeDays },
     ai_logs: { entries: records.length },
     category_definitions: categoryDefinitions,
@@ -124,7 +142,7 @@
   };
 
   window.AI_USAGE_STRATA_LEDGER = Object.freeze({
-    source: read() ? "imported" : "demo",
+    source,
     importFile(file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -132,7 +150,7 @@
           const next = JSON.parse(String(reader.result));
           const message = validate(next);
           if (message) throw new Error(message);
-          write(next);
+          write(next, "imported");
           window.location.reload();
         } catch (error) { window.alert(`无法导入这个账本：${error.message}`); }
       };
@@ -143,10 +161,20 @@
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = "ai-usage-ledger.json";
+      anchor.download = "my-ai-usage-ledger.json";
       anchor.click();
       URL.revokeObjectURL(url);
     },
-    reset() { remove(); window.location.reload(); }
+    downloadTemplate() {
+      const blob = new Blob([JSON.stringify(emptyLedger, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "ai-usage-ledger-template.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    },
+    loadDemo() { write(clone(demoLedger), "demo"); window.location.reload(); },
+    clear() { remove(); window.location.reload(); }
   });
 })();

@@ -25,10 +25,7 @@ node --check assets/evidence.js
 node --check assets/public-adapter.js
 ```
 
-Then run `启动·AI Usage Strata.command` on macOS, or any local static-file
-server, and check both languages. Test import, export, reset, date rollers,
-reference period, category filters, a chart-point evidence link, and all four
-camera presets.
+Then run `启动·AI Usage Strata.command` on macOS, or any local static-file server, and check both languages. Test the empty first-run state, template download, import, current-ledger download, example loading, clearing, date rollers, reference period, category filters, a chart-point evidence link, and all four camera presets.
 
 ## Pull requests
 

@@ -54,8 +54,8 @@ AI Usage Strata 把你主动保留的一小份账本，变成一个可以查看�
 
 ## 三分钟上手
 
-1. 先打开[虚构示例在线体验](https://novakepler513.github.io/ai-usage-strata/)，不用登录。
-2. 试着旋转瀑布图、勾选分类、切换时间／输入／输出，再打开一个日期刻痕。
+1. 先打开[在线页面](https://novakepler513.github.io/ai-usage-strata/)，它会有意从“没有数据”开始。
+2. 点“查看示例”后，才会加载 Atlas Lab 虚构案例；再试着旋转瀑布图、勾选分类、切换时间／输入／输出，并打开一个日期刻痕。
 3. 导入 [`examples/minimal-ledger.json`](examples/minimal-ledger.json) 的副本。
 4. 把虚构行改成自己的记录；如果有经常回看的冲刺期、审计期或报告期，加上 `reference_window`。
 5. 需要备份时，导出自己的账本。

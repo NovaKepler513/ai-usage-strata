@@ -17,8 +17,7 @@ Run this checklist before a public push, tag, ZIP, or screenshot pack.
    in the release.
 6. Check that the commit identity is a deliberate public identity, not an
    automatic global Git setting.
-7. Start the local launcher, import a throwaway ledger, export it, reset to
-   demo, and verify the Reference period shortcut if the ledger contains one.
+7. Start the local launcher, verify the empty first-run state, download the template, import a throwaway ledger, download that current ledger, load and leave the fictional example, and verify the Reference period shortcut if the ledger contains one.
 8. Check both 中文 and English in the language switch. New visible interface
    copy belongs in `assets/i18n.js`; do not add one-language-only controls or
    explanatory text.

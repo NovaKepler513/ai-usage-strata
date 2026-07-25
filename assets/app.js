@@ -6,6 +6,10 @@
   const t = i18n?.t || ((key) => key);
   const category = i18n?.category || ((name) => name);
   const isEnglish = i18n?.language === "en";
+  const ledgerSource = window.AI_USAGE_STRATA_LEDGER?.source || "empty";
+  const hasRecords = Boolean(data.profile?.has_records);
+  const isDemo = ledgerSource === "demo";
+  const isEmptyLedger = !hasRecords && ledgerSource === "empty";
 
   const categoryDefinitions = Array.isArray(data.category_definitions) ? data.category_definitions : [];
   const observedModules = data.timeline.flatMap((item) => Object.keys(item.modules || {}));
@@ -141,9 +145,22 @@
     return mixColor(ridgePalette[start], ridgePalette[end], scaled - start);
   };
   const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
+  const ledgerActions = isEmptyLedger ? `
+    <button class="ledger-action" type="button" data-ledger-action="import">${t("import")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="demo">${t("viewDemo")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : isDemo ? `
+    <button class="ledger-action" type="button" data-ledger-action="import">${t("importOwn")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("exitDemo")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : `
+    <button class="ledger-action" type="button" data-ledger-action="import">${t("replaceLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">${t("downloadCurrent")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("clearLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>`;
 
   root.innerHTML = `
-    <div class="report-shell" data-metric="time">
+    <div class="report-shell" data-metric="time" data-ledger-state="${hasRecords ? (isDemo ? "demo" : "ledger") : "empty"}">
       <header class="app-bar">
         <div class="app-identity">
           <span class="strata-sign" aria-hidden="true">
@@ -157,17 +174,16 @@
           <div class="app-wordmark"><span>LOCAL-FIRST AI TOOL</span><h1>AI Usage Strata</h1><p>${t("productSubtitle")}</p></div>
         </div>
         <div class="app-actions">
-          <span class="generated-at">${escapeHtml(data.profile?.label || "Ledger")} · ${t("localOnly")}</span>
-          <button class="ledger-action" type="button" data-ledger-action="import">${t("import")}</button>
-          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">${t("export")}</button>
-          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="reset">${t("demo")}</button>
+          <span class="generated-at">${escapeHtml(data.profile?.label || t("emptyLedger"))} · ${t("localOnly")}</span>
+          ${ledgerActions}
           <button class="ledger-action ledger-action-quiet language-switch" type="button" data-language-switch>${t("language")}</button>
           <button class="theme-switch" type="button" aria-label="${t("switchTheme")}" aria-pressed="false"><span></span></button>
         </div>
       </header>
 
       <main>
-        <section class="command-bar" aria-label="${t("range")}">
+        <section class="command-bar ${hasRecords ? "" : "command-bar-empty"}" aria-label="${t("range")}">
+          ${hasRecords ? `
           <div class="range-selectors">
             <div class="range-labels"><span>${t("startDate")}</span><span>${t("endDate")}</span></div>
             <div class="range-fields">
@@ -190,7 +206,7 @@
             <button type="button" data-preset="current">${t("currentMonth")}</button>
             <button type="button" data-preset="four-weeks">${t("fourWeeks")}</button>
           </div>
-          <p class="selection-reading" id="selection-reading"></p>
+          <p class="selection-reading" id="selection-reading"></p>` : `<p class="empty-range-reading">${t("noDateRange")}</p>`}
         </section>
 
         <section class="overview-section" aria-labelledby="metric-title">
@@ -252,18 +268,40 @@
         </details>
       </main>
 
-      <footer><span>${t("ledgerRange")} ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}</span><span>${t("privacyFooter")}</span></footer>
+      <footer><span>${hasRecords ? `${t("ledgerRange")} ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}` : t("noDateRange")}</span><span>${t("privacyFooter")}</span></footer>
+      <dialog class="ledger-guide" id="ledger-guide">
+        <div>
+          <p class="eyebrow">${t("ledgerGuide")}</p>
+          <h2>${t("guideTitle")}</h2>
+          <p>${t("guideCopy")}</p>
+          <div class="ledger-minimum"><span>${t("guideMinimum")}</span><code>{ "date": "2026-07-24", "hours": 2.5 }</code></div>
+          <ol>
+            <li><strong>${t("guideStepOne")}</strong><span>${t("guideStepOneCopy")}</span></li>
+            <li><strong>${t("guideStepTwo")}</strong><span>${t("guideStepTwoCopy")}</span></li>
+            <li><strong>${t("guideStepThree")}</strong><span>${t("guideStepThreeCopy")}</span></li>
+          </ol>
+          <p class="guide-export">${t("guideExport")}</p>
+          <button class="ledger-action" type="button" data-guide-close>${t("guideClose")}</button>
+        </div>
+      </dialog>
     </div>`;
 
   const shell = root.querySelector(".report-shell");
   const fileInput = document.getElementById("ledger-file");
+  const runLedgerAction = (action) => {
+    if (action === "import") fileInput?.click();
+    if (action === "export") window.AI_USAGE_STRATA_LEDGER?.exportFile();
+    if (action === "template") window.AI_USAGE_STRATA_LEDGER?.downloadTemplate();
+    if (action === "demo") window.AI_USAGE_STRATA_LEDGER?.loadDemo();
+    if (action === "clear") window.AI_USAGE_STRATA_LEDGER?.clear();
+    if (action === "guide") root.querySelector("#ledger-guide")?.showModal();
+  };
   root.querySelectorAll("[data-ledger-action]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (button.dataset.ledgerAction === "import") fileInput?.click();
-      if (button.dataset.ledgerAction === "export") window.AI_USAGE_STRATA_LEDGER?.exportFile();
-      if (button.dataset.ledgerAction === "reset") window.AI_USAGE_STRATA_LEDGER?.reset();
+      runLedgerAction(button.dataset.ledgerAction);
     });
   });
+  root.querySelector("[data-guide-close]")?.addEventListener("click", () => root.querySelector("#ledger-guide")?.close());
   root.querySelector("[data-language-switch]")?.addEventListener("click", () => i18n?.setLanguage(isEnglish ? "zh" : "en"));
   fileInput?.addEventListener("change", () => {
     const file = fileInput.files?.[0];
@@ -280,6 +318,7 @@
   root.querySelector(".theme-switch")?.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 
   const syncInputs = () => {
+    if (!hasRecords) return;
     root.querySelector("#start-year").textContent = selectionStart.getFullYear();
     root.querySelector("#start-month").textContent = isEnglish ? `${pad(selectionStart.getMonth() + 1)}` : `${pad(selectionStart.getMonth() + 1)} 月`;
     root.querySelector("#start-day").textContent = isEnglish ? pad(selectionStart.getDate()) : `${pad(selectionStart.getDate())} 日`;
@@ -850,6 +889,17 @@
   const renderPrimaryChart = (days) => {
     cleanupWaterfall();
     const metric = metrics[activeMetric];
+    const hero = root.querySelector(".hero-analysis");
+    hero.classList.toggle("is-empty", !hasRecords);
+    if (!hasRecords) {
+      root.querySelector("#chart-title").textContent = t("emptyChartTitle");
+      root.querySelector("#chart-title").removeAttribute("href");
+      root.querySelector("#chart-subtitle").textContent = t("emptyChartCopy");
+      root.querySelector("#chart-peak").textContent = "";
+      root.querySelector("#primary-chart").innerHTML = `<div class="empty-ledger-card"><span class="strata-sign" aria-hidden="true"><svg viewBox="0 0 82 52"><path class="sign-plane sign-plane-back" d="M2 42C13 38 17 28 27 29C37 30 40 39 50 34C61 29 65 15 80 11L80 48H2Z"/><path class="sign-plane sign-plane-mid" d="M2 45C14 42 20 35 30 36C41 38 46 27 57 25C67 24 73 31 80 28L80 48H2Z"/><path class="sign-line sign-line-front" d="M2 46C15 44 22 40 34 41C47 43 53 35 64 33C72 32 77 36 80 35"/></svg></span><div><strong>${t("emptyChartTitle")}</strong><p>${t("emptyChartCopy")}</p></div><div class="empty-ledger-actions"><button class="ledger-action" type="button" data-empty-action="import">${t("import")}</button><button class="ledger-action ledger-action-quiet" type="button" data-empty-action="template">${t("downloadTemplate")}</button><button class="ledger-action ledger-action-quiet" type="button" data-empty-action="demo">${t("viewDemo")}</button></div></div>`;
+      root.querySelectorAll("[data-empty-action]").forEach((button) => button.addEventListener("click", () => runLedgerAction(button.dataset.emptyAction)));
+      return;
+    }
     const { granularity, slots, items } = chartGroups(days);
     const ridges = items.map((item) => ({ ...item, series: ridgeSeries(item, granularity, slots, metric) }));
     const visiblePoints = ridges.flatMap((ridge) => ridge.series.filter((point) => point.date));
@@ -986,12 +1036,13 @@
     const metric = metrics[activeMetric];
     const metricRange = summary[metric.range];
     const metricMeasured = summary[metric.measured];
-    const isEstimated = Math.abs(metricRange[0] - metricMeasured) > 0.001 || Math.abs(metricRange[1] - metricMeasured) > 0.001;
+    const isEstimated = hasRecords && (Math.abs(metricRange[0] - metricMeasured) > 0.001 || Math.abs(metricRange[1] - metricMeasured) > 0.001);
     shell.dataset.metric = activeMetric;
-    root.querySelector("#selection-reading").textContent = `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${days.length} ${t("days")}`;
-    root.querySelector("#metric-title").textContent = metric.label;
+    const selectionReading = root.querySelector("#selection-reading");
+    if (selectionReading) selectionReading.textContent = hasRecords ? `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${days.length} ${t("days")}` : t("noDateRange");
+    root.querySelector("#metric-title").textContent = hasRecords ? metric.label : t("noData");
     const metricStatus = root.querySelector("#metric-status");
-    metricStatus.textContent = isEstimated ? t("estimate") : t("recorded");
+    metricStatus.textContent = hasRecords ? (isEstimated ? t("estimate") : t("recorded")) : t("noData");
     metricStatus.className = `evidence-status ${isEstimated ? "evidence-estimate" : "evidence-confirmed"}`;
     root.querySelector("#metric-total").textContent = metric.format(summary[metric.field]);
     root.querySelector("#metric-scope").textContent = `${summary.activeDays} ${t("recordedDays")} · ${summary.commits} ${t("uses")}`;
