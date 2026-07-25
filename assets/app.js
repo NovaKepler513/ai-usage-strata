@@ -148,10 +148,12 @@
   const ledgerActions = isEmptyLedger ? `
     <button class="ledger-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("import")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="demo">${t("viewDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : isDemo ? `
     <button class="ledger-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("importOwn")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("exitDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : `
     <button class="ledger-action" type="button" data-ledger-action="builder">${t("enterLedger")}</button>
@@ -288,7 +290,31 @@
           </ol>
           <p class="guide-export">${t("guideExport")}</p>
           <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
+          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
           <button class="ledger-action" type="button" data-guide-close>${t("guideClose")}</button>
+        </div>
+      </dialog>
+      <dialog class="ai-intake" id="ai-intake">
+        <div>
+          <button class="builder-close" type="button" data-ai-close aria-label="${t("aiClose")}" title="${t("aiClose")}">×</button>
+          <p class="eyebrow">${t("aiIntake")}</p>
+          <h2>${t("aiIntakeTitle")}</h2>
+          <p>${t("aiIntakeCopy")}</p>
+          <div class="ai-route-switch" role="group" aria-label="${t("aiIntake")}">
+            <button type="button" data-ai-route="prepare" aria-pressed="true">${t("aiRoutePrepare")}</button>
+            <button type="button" data-ai-route="local" aria-pressed="false">${t("aiRouteLocal")}</button>
+          </div>
+          <section class="ai-route-copy" id="ai-route-copy"></section>
+          <label class="ai-platform"><span>${t("aiPlatform")}</span><select id="ai-platform"><option value="codex">${t("aiPlatformCodex")}</option><option value="claude">${t("aiPlatformClaude")}</option><option value="other">${t("aiPlatformOther")}</option><option value="cloud">${t("aiPlatformCloud")}</option></select></label>
+          <label class="ai-confirm" id="ai-confirm"><input id="ai-confirm-input" type="checkbox"><span>${t("aiConfirm")}</span></label>
+          <label class="ai-prompt"><span>${t("aiPromptLabel")}</span><textarea id="ai-prompt" readonly></textarea></label>
+          <p class="ai-status" id="ai-status" role="status"></p>
+          <div class="builder-actions ai-actions">
+            <button class="ledger-action ledger-action-quiet" type="button" data-ai-copy>${t("aiCopyPrompt")}</button>
+            <button class="ledger-action ledger-action-quiet" type="button" data-ai-guide>${t("aiDownloadGuide")}</button>
+            <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
+            <button class="ledger-action" type="button" data-ledger-action="import">${t("aiImportAfter")}</button>
+          </div>
         </div>
       </dialog>
       <dialog class="ledger-builder" id="ledger-builder">
@@ -346,6 +372,128 @@
   const builder = root.querySelector("#ledger-builder");
   const builderRows = root.querySelector("#builder-rows");
   const tableReview = root.querySelector("#table-review");
+  const aiIntake = root.querySelector("#ai-intake");
+  let aiRoute = "prepare";
+  const downloadText = (filename, content) => {
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  const aiPlatformName = (value) => ({
+    codex: t("aiPlatformCodex"), claude: t("aiPlatformClaude"), other: t("aiPlatformOther"), cloud: t("aiPlatformCloud")
+  }[value] || t("aiPlatformOther"));
+  const aiTaskPrompt = (route, platform) => {
+    const local = route === "local";
+    const cloud = platform === "cloud";
+    if (isEnglish) return `# AI Usage Strata ledger task
+
+${local ? "Work only in the local folder I explicitly authorise. Create or update one file named ai-usage-ledger.json." : "Use only the material I explicitly provide or identify below. Create one file named ai-usage-ledger.json."}
+
+## Before you read anything
+1. State the exact folders, files, exports, or conversation transcripts you will use. If that scope is missing or ambiguous, ask me before reading.
+2. ${cloud ? "You are a cloud/web AI and cannot inspect my computer. Use only the files or text I deliberately upload or paste." : "Do not inspect browser profiles, hidden caches, credentials, unrelated folders, or network services."}
+3. Do not use or expose passwords, API keys, login sessions, client names, raw chat text, or private paths.
+
+## What to make
+Group the approved material by calendar date. For each usable day, capture hours, a short work category, optional input/output counts when the source actually contains them, and a short non-sensitive evidence label.
+
+- Use confidence: "recorded" only for numbers directly present in the approved material.
+- Use confidence: "estimated" for reconstruction, and include a specific estimate_basis.
+- Do not invent a value for a day with no evidence.
+- Keep evidence labels short; do not paste raw conversations.
+${local ? "- Before replacing an existing ai-usage-ledger.json, make one local .bak copy and show me the summary of files you used." : "- Show me a short summary of sources and totals before you finish."}
+
+## Required JSON shape
+{
+  "schema_version": "1.0",
+  "profile": { "label": "My AI usage ledger" },
+  "records": [
+    {
+      "date": "2026-07-25",
+      "hours": 2.5,
+      "category": "Research",
+      "input_chars": 0,
+      "output_chars": 0,
+      "activity_count": 1,
+      "confidence": "recorded",
+      "evidence": [{ "type": "note", "label": "Short source description" }]
+    }
+  ]
+}
+
+When the JSON is ready, I will review it and import it into AI Usage Strata. Do not upload it anywhere.`;
+
+    return `# AI Usage Strata 账本整理任务
+
+${local ? "只在我明确授权的本地目录内工作，创建或更新一份 ai-usage-ledger.json。" : "只使用我明确提供或指出的资料，整理出一份 ai-usage-ledger.json。"}
+
+## 开始读取前
+1. 先列出你准备读取的确切文件夹、文件、导出文件或会话文本；范围不明确时先问我，不能自行扫描。
+2. ${cloud ? "你是 Cloud／网页端 AI，看不到我的电脑；只能使用我主动上传或粘贴的内容。" : "不要读取浏览器资料、隐藏缓存、密钥、登录信息、无关目录或网络服务。"}
+3. 不使用、不输出密码、API Key、登录态、客户姓名、原始聊天文本或私密路径。
+
+## 要整理什么
+按自然日汇总已授权资料。每个可用日期写下工作小时、简短分类；只有来源里明确存在时才写输入／输出量；证据只留一句不敏感的来源说明。
+
+- 只有直接出现在已授权资料里的数字，才标记 confidence: "recorded"。
+- 反推的数字标记 confidence: "estimated"，并写清 estimate_basis。
+- 没有证据的日期不要编造数字。
+- 证据标签要简短，不能复制原始对话。
+${local ? "- 覆盖已有 ai-usage-ledger.json 前，先在本地留一份 .bak 备份，并告诉我读取了哪些文件。" : "- 完成前先给我一段来源和总量摘要。"}
+
+## JSON 必须长这样
+{
+  "schema_version": "1.0",
+  "profile": { "label": "我的 AI 用量账本" },
+  "records": [
+    {
+      "date": "2026-07-25",
+      "hours": 2.5,
+      "category": "研究",
+      "input_chars": 0,
+      "output_chars": 0,
+      "activity_count": 1,
+      "confidence": "recorded",
+      "evidence": [{ "type": "note", "label": "简短来源说明" }]
+    }
+  ]
+}
+
+JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上传到任何地方。`;
+  };
+  const renderAIIntake = () => {
+    if (!aiIntake) return;
+    const local = aiRoute === "local";
+    const platform = aiIntake.querySelector("#ai-platform")?.value || "codex";
+    const copyButton = aiIntake.querySelector("[data-ai-copy]");
+    const guideButton = aiIntake.querySelector("[data-ai-guide]");
+    const confirmation = aiIntake.querySelector("#ai-confirm");
+    const confirmationInput = aiIntake.querySelector("#ai-confirm-input");
+    aiIntake.querySelectorAll("[data-ai-route]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.aiRoute === aiRoute));
+      button.disabled = button.dataset.aiRoute === "local" && platform === "cloud";
+    });
+    const copy = aiIntake.querySelector("#ai-route-copy");
+    copy.innerHTML = `<strong>${local ? t("aiRouteLocalTitle") : t("aiRoutePrepareTitle")}</strong><p>${local ? t("aiRouteLocalCopy") : t("aiRoutePrepareCopy")}</p><div class="ai-safety"><b>${t("aiSafetyTitle")}</b><span>${local ? t("aiSafetyLocal") : t("aiSafetyPrepare")}</span></div>`;
+    confirmation.hidden = !local;
+    if (!local) confirmationInput.checked = false;
+    const confirmed = !local || confirmationInput.checked;
+    copyButton.disabled = !confirmed;
+    guideButton.disabled = !confirmed;
+    guideButton.textContent = local ? t("aiDownloadLocalGuide") : t("aiDownloadGuide");
+    aiIntake.querySelector("#ai-prompt").value = aiTaskPrompt(aiRoute, platform);
+    const status = aiIntake.querySelector("#ai-status");
+    status.textContent = local && !confirmed ? t("aiLocalGuard") : "";
+  };
+  const openAIIntake = () => {
+    if (!aiIntake) return;
+    renderAIIntake();
+    aiIntake.showModal();
+  };
   let pendingTable = null;
   const defaultBuilderDate = iso(new Date());
   const addBuilderRow = (values = {}) => {
@@ -422,12 +570,13 @@
   };
   const runLedgerAction = (action, control) => {
     if (action === "builder") openBuilder();
-    if (action === "import") fileInput?.click();
+    if (action === "import") { aiIntake?.close(); fileInput?.click(); }
     if (action === "export") window.AI_USAGE_STRATA_LEDGER?.exportFile();
     if (action === "template") window.AI_USAGE_STRATA_LEDGER?.downloadTemplate();
     if (action === "demo") deferLedgerAction(t("loadingDemo"), control, () => window.AI_USAGE_STRATA_LEDGER?.loadDemo());
     if (action === "clear") deferLedgerAction(isDemo ? t("leavingDemo") : t("loadingLedger"), control, () => window.AI_USAGE_STRATA_LEDGER?.clear());
     if (action === "guide") root.querySelector("#ledger-guide")?.showModal();
+    if (action === "ai-intake") openAIIntake();
   };
   root.querySelectorAll("[data-ledger-action]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -435,6 +584,37 @@
     });
   });
   root.querySelector("[data-guide-close]")?.addEventListener("click", () => root.querySelector("#ledger-guide")?.close());
+  root.querySelector("[data-ai-close]")?.addEventListener("click", () => aiIntake?.close());
+  aiIntake?.addEventListener("click", (event) => {
+    const bounds = aiIntake.getBoundingClientRect();
+    const outside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+    if (outside) aiIntake.close();
+  });
+  aiIntake?.querySelectorAll("[data-ai-route]").forEach((button) => button.addEventListener("click", () => {
+    if (button.disabled) return;
+    aiRoute = button.dataset.aiRoute;
+    renderAIIntake();
+  }));
+  aiIntake?.querySelector("#ai-platform")?.addEventListener("change", () => {
+    if (aiRoute === "local" && aiIntake.querySelector("#ai-platform").value === "cloud") aiRoute = "prepare";
+    renderAIIntake();
+  });
+  aiIntake?.querySelector("#ai-confirm-input")?.addEventListener("change", renderAIIntake);
+  aiIntake?.querySelector("[data-ai-copy]")?.addEventListener("click", async (event) => {
+    const prompt = aiIntake.querySelector("#ai-prompt").value;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      aiIntake.querySelector("#ai-status").textContent = t("aiPromptCopied");
+    } catch (_) {
+      aiIntake.querySelector("#ai-status").textContent = t("aiPromptCopyFailed");
+    }
+    event.currentTarget.blur();
+  });
+  aiIntake?.querySelector("[data-ai-guide]")?.addEventListener("click", () => {
+    const local = aiRoute === "local";
+    const platform = aiIntake.querySelector("#ai-platform").value;
+    downloadText(local ? "AI_USAGE_STRATA.md" : "ai-usage-strata-ai-task.md", aiTaskPrompt(aiRoute, platform));
+  });
   root.querySelector("[data-builder-add]")?.addEventListener("click", () => addBuilderRow());
   root.querySelector("[data-builder-close]")?.addEventListener("click", () => builder?.close());
   builder?.addEventListener("click", (event) => {

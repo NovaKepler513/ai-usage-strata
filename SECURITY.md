@@ -11,6 +11,22 @@ issue. Examples include an accidental network request, a way for an evidence
 link to execute code, an import that can leak data, or private data committed
 to the repository.
 
+## AI-assisted ledger preparation
+
+The app can generate a task guide for Codex, Claude Code, or another AI, but
+it does not connect to those products. There are no embedded provider tokens,
+account links, APIs, or remote agents in this repository.
+
+If a user gives a local coding AI access to a folder, that permission is
+between the user and the AI environment. The app must never claim to grant,
+verify, extend, or observe it. The supported local-write pattern is deliberately
+narrow: the AI reads an explicitly named scope, writes only
+`ai-usage-ledger.json`, and creates a `.bak` copy before replacing it.
+
+Do not propose automatic chat scraping, browser-profile access, credential
+collection, or arbitrary filesystem scanning as an integration. A cloud AI must
+be treated as able to use only material the user deliberately uploads or pastes.
+
 ## Reporting
 
 Use GitHub's private security-advisory flow for this repository. If it is not

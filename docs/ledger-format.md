@@ -2,8 +2,13 @@
 
 AI Usage Strata saves and exports one JSON object with a `records` array. You
 do not need to write it by hand: the page can create it from its direct-entry
-form or from a CSV/TSV table. JSON is the portable format for backup, sharing a
+form or from a CSV/TSV table. It can also give your own AI a bounded task that
+creates this JSON for you. JSON is the portable format for backup, sharing a
 template, and advanced editing.
+
+For an AI-assisted route, start from [AI-assisted import](ai-assisted-import.md).
+The AI should create this format, but the user still reviews and deliberately
+imports it; this site does not connect to an AI account or scan local records.
 
 ## Bring a normal table first
 

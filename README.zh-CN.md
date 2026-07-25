@@ -1,6 +1,6 @@
 # AI Usage Strata
 
-[English](README.md) · [在线体验](https://novakepler513.github.io/ai-usage-strata/) · [账本格式](docs/ledger-format.md) · [参与贡献](CONTRIBUTING.md)
+[English](README.md) · [在线体验](https://novakepler513.github.io/ai-usage-strata/) · [让 AI 整理账本](docs/ai-assisted-import.zh-CN.md) · [账本格式](docs/ledger-format.md) · [参与贡献](CONTRIBUTING.md)
 
 > 一个本机优先的可视化账本：把你和 AI 一起工作的时间、文字量与去向，变成一段可回看的记录。
 
@@ -54,12 +54,25 @@ AI Usage Strata 把你主动保留的一小份账本，变成一个可以查看�
 
 ## 三分钟上手
 
+```mermaid
+flowchart LR
+  A[笔记、表格或自己选出的导出记录] --> B{选一种轻量入口}
+  B --> C[填写日期和小时]
+  B --> D[导入 CSV、TSV 或 JSON]
+  B --> E[请自己的 AI 整理账本]
+  C --> F[本机核对]
+  D --> F
+  E --> F
+  F --> G[查看时间地层]
+```
+
 1. 先打开[在线页面](https://novakepler513.github.io/ai-usage-strata/)，它会有意从“没有数据”开始。
 2. 点“查看示例”后，才会加载 Atlas Lab 虚构案例；再试着旋转瀑布图、勾选分类、切换时间／输入／输出，并打开一个日期刻痕。
 3. 点“开始填写”，先记一条日期和小时数；这已经足够形成第一条记录。
-4. 或导入已有表格：[`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) 展示了 CSV 写法。CSV／TSV 中的 `日期/date`、`小时/hours`、`分类/category`、`输入/input`、`输出/output`、`次数/count` 会先自动建议对应关系，再由你确认或手动改列；确认前不会写入账本。
-5. JSON 是选填：[`examples/minimal-ledger.json`](examples/minimal-ledger.json) 是方便备份、迁移和高级编辑的格式；如果有经常回看的冲刺期、审计期或报告期，再加上 `reference_window`。
-6. 需要备份时，导出自己的账本。
+4. 如果记录很零散，点“让 AI 整理”：把页面生成的任务说明贴进 Codex、Claude Code 或其他 AI；它会输出 `ai-usage-ledger.json`，你检查后再导入。这里不需要 API Key。
+5. 或导入已有表格：[`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) 展示了 CSV 写法。CSV／TSV 中的 `日期/date`、`小时/hours`、`分类/category`、`输入/input`、`输出/output`、`次数/count` 会先自动建议对应关系，再由你确认或手动改列；确认前不会写入账本。
+6. JSON 是选填：[`examples/minimal-ledger.json`](examples/minimal-ledger.json) 是方便备份、迁移和高级编辑的格式；如果有经常回看的冲刺期、审计期或报告期，再加上 `reference_window`。
+7. 需要备份时，导出自己的账本。
 
 macOS 可以直接双击 `启动·AI Usage Strata.command`。它只会在本机启动 `127.0.0.1:8770` 并打开页面。其他系统用任意静态文件服务器打开此目录即可。
 
@@ -91,6 +104,17 @@ JSON 是页面保存和导出的轻量、可携带格式。一行可以代表一
 
 如果某天是补估，标为 `"confidence": "estimated"`，并写一条 `estimate_basis` 说明依据。完整字段和“参考期”写法见 [docs/ledger-format.md](docs/ledger-format.md)。
 
+## 让 AI 做格式整理，不替你做事实判断
+
+页面提供两条可选的 AI 协助路径，两条都不会让本网站介入你和 AI 服务商之间的数据交换。
+
+| 路径 | 适合谁 | 怎么做 |
+| --- | --- | --- |
+| 请 AI 整理 | 大多数人；记录散落在笔记、导出文件或本地 AI 对话里 | 复制页面任务说明，明确告诉 AI 能读什么；让它输出 `ai-usage-ledger.json`，再自行导入。 |
+| 本地 AI 写入 | 已在指定目录中工作的本地 Codex 或 Claude Code | 确认安全边界后，只允许它读取指定资料、只写 `ai-usage-ledger.json`。 |
+
+无论哪条路径，来源里直接存在的数字才标为 `recorded`；反推数字必须标为 `estimated` 并写 `estimate_basis`；没有证据的日期不写。Cloud／网页端 AI 不会、也不应查看你的电脑，只能使用你主动上传或粘贴的材料。完整步骤见[用自己的 AI 整理账本](docs/ai-assisted-import.zh-CN.md)；可复用的本地 AI 任务说明在[`integrations/local-ai/AI_USAGE_STRATA.zh-CN.md`](integrations/local-ai/AI_USAGE_STRATA.zh-CN.md)。
+
 ## “本机优先”是一个明确边界
 
 | 它会做 | 它不会做 |
@@ -98,6 +122,8 @@ JSON 是页面保存和导出的轻量、可携带格式。一行可以代表一
 | 读取你主动填写的内容，或主动选择的 JSON／CSV／TSV 文件 | 扫描你的聊天、文件、日历、仓库或浏览器 |
 | 把导入副本留在当前浏览器本地存储 | 上传、同步、追踪或远程分析你的数据 |
 | 让你导出或重置这份副本 | 创建账户或发起隐藏网络请求 |
+
+“让 AI 整理”按钮只会在浏览器里生成任务说明，不会连接任何 AI 账号。若你使用本地编程 AI，文件权限只由你和该 AI 环境决定，不会由本网站获取或授予。
 
 分享账本或截图前，请移除可能识别客户、协作者、本地路径或原始聊天内容的标签和链接。完整边界见[隐私与安全使用说明](docs/privacy.md)。
 

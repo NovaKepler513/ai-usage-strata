@@ -1,6 +1,6 @@
 # AI Usage Strata
 
-[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md)
+[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [How to use AI to prepare a ledger](docs/ai-assisted-import.md) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md)
 
 > A local-first visual ledger for the time, text, and work you do with AI.
 
@@ -52,14 +52,27 @@ Every date mark that has evidence can lead to its day page. There, the tool keep
 
 The tool will never quietly fill a blank day and present it as a fact.
 
-## Try it in three minutes
+## Start in three minutes
+
+```mermaid
+flowchart LR
+  A[Your notes, table, or chosen exports] --> B{Choose a light route}
+  B --> C[Enter a date and hours]
+  B --> D[Import a CSV, TSV, or JSON]
+  B --> E[Ask your own AI to prepare a ledger]
+  C --> F[Review locally]
+  D --> F
+  E --> F
+  F --> G[Explore the time strata]
+```
 
 1. Open the [live app](https://novakepler513.github.io/ai-usage-strata/). It starts with no data, by design.
 2. Choose “View example” to explore a fictional Atlas Lab case: rotate the waterfall, choose a category, change Time to Input or Output, and open a date mark.
 3. Choose “Start entering” and add a date plus hours; that is enough for a first record.
-4. Or import an existing table: [`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) shows the accepted CSV shape. CSV and TSV headers such as `date`, `hours`, `category`, `input`, `output`, and `count` are suggested automatically, then shown for you to confirm or remap before anything is saved.
-5. JSON is optional: [`examples/minimal-ledger.json`](examples/minimal-ledger.json) is the portable backup and advanced-editing format. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
-6. Export your ledger for a portable backup whenever you want.
+4. Choose “Ask AI to organise” if your record is scattered. Copy the generated task into Codex, Claude Code, or another AI; it returns `ai-usage-ledger.json`, which you review and import. No API key is needed.
+5. Or import an existing table: [`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) shows the accepted CSV shape. CSV and TSV headers such as `date`, `hours`, `category`, `input`, `output`, and `count` are suggested automatically, then shown for you to confirm or remap before anything is saved.
+6. JSON is optional: [`examples/minimal-ledger.json`](examples/minimal-ledger.json) is the portable backup and advanced-editing format. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
+7. Export your ledger for a portable backup whenever you want.
 
 On macOS, double-click `启动·AI Usage Strata.command`. It starts a local-only server at `127.0.0.1:8770` and opens the app. On other systems, serve this folder with any static-file server and open `index.html`.
 
@@ -91,6 +104,23 @@ JSON is the small, portable format the app saves and exports. One row can be one
 
 If you reconstruct a day, use `"confidence": "estimated"` and add a short `estimate_basis`. The full field guide, including the saved reference period, is in [docs/ledger-format.md](docs/ledger-format.md).
 
+## Let AI do the formatting, not the deciding
+
+The app has two AI-assisted routes. Both are optional and both keep the website
+out of the exchange between you and an AI provider.
+
+| Route | Best for | What happens |
+| --- | --- | --- |
+| Ask AI to organise | Most people; scattered notes, exports, or a local AI conversation | Copy the in-app task, tell the AI exactly what it may read, then import its `ai-usage-ledger.json`. |
+| Local AI writes | A local Codex or Claude Code session already working in a folder you control | Confirm the security boundary, then let it read only named sources and write only `ai-usage-ledger.json`. |
+
+For either route, the AI must label direct facts as `recorded`, reconstructions
+as `estimated` with `estimate_basis`, and omit days without evidence. A cloud
+or web AI cannot safely inspect your computer: it can use only material you
+choose to upload or paste. The complete step-by-step guide is
+[here](docs/ai-assisted-import.md); a reusable local-agent instruction is in
+[`integrations/local-ai/AI_USAGE_STRATA.md`](integrations/local-ai/AI_USAGE_STRATA.md).
+
 ## Local-first means a concrete boundary
 
 | The app does | The app does not do |
@@ -98,6 +128,10 @@ If you reconstruct a day, use `"confidence": "estimated"` and add a short `estim
 | Read the form entry or JSON/CSV/TSV file you deliberately select | Scan your chats, files, calendar, repository, or browser |
 | Keep the imported copy in that browser’s local storage | Upload, sync, track, or analyse your data remotely |
 | Let you export or reset the copy | Create an account or make hidden network requests |
+
+The “Ask AI to organise” button only creates a task brief in your browser. It
+does not connect to any AI account. If you use a local coding AI, its file
+permissions are controlled by you and that AI environment, never by this site.
 
 Before sharing a ledger or screenshot, remove labels and links that could identify a client, collaborator, local path, or raw chat content. Read the full [privacy and safe-use notes](docs/privacy.md).
 
