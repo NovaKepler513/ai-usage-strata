@@ -303,6 +303,23 @@
           </div>
         </div>
       </dialog>
+      <dialog class="table-review" id="table-review">
+        <div>
+          <button class="builder-close" type="button" data-table-close aria-label="${t("closeBuilder")}" title="${t("closeBuilder")}">×</button>
+          <p class="eyebrow">${t("importTable")}</p>
+          <h2>${t("tableReviewTitle")}</h2>
+          <p>${t("tableReviewCopy")}</p>
+          <p class="table-file" id="table-file"></p>
+          <div class="table-mapping" id="table-mapping"></div>
+          <p class="table-date-rule">${t("tableDateRule")}</p>
+          <p class="table-status" id="table-status" role="status"></p>
+          <section class="table-preview"><strong>${t("tablePreview")}</strong><div id="table-preview"></div></section>
+          <div class="builder-actions">
+            <button class="ledger-action ledger-action-quiet" type="button" data-table-back>${t("tableBack")}</button>
+            <button class="ledger-action" type="button" data-table-confirm>${t("tableConfirm")}</button>
+          </div>
+        </div>
+      </dialog>
     </div>`;
 
   const shell = root.querySelector(".report-shell");
@@ -324,6 +341,8 @@
   };
   const builder = root.querySelector("#ledger-builder");
   const builderRows = root.querySelector("#builder-rows");
+  const tableReview = root.querySelector("#table-review");
+  let pendingTable = null;
   const defaultBuilderDate = iso(new Date());
   const addBuilderRow = (values = {}) => {
     if (!builderRows) return;
@@ -367,6 +386,36 @@
     if (!builderRows?.children.length) addBuilderRow();
     builder.showModal();
   };
+  const tableFieldLabels = {
+    date: t("tableFieldDate"), hours: t("tableFieldHours"), minutes: t("tableFieldMinutes"), category: t("tableFieldCategory"), input: t("tableFieldInput"), output: t("tableFieldOutput"), count: t("tableFieldCount"), note: t("tableFieldNote")
+  };
+  const renderTableReview = ({ fileName, table, mapping }) => {
+    if (!tableReview) return;
+    pendingTable = { fileName, table, mapping: { ...mapping } };
+    const selectOptions = (selected) => `<option value="">${t("tableUnmapped")}</option>${table.columns.map((column) => `<option value="${escapeHtml(column.id)}"${column.id === selected ? " selected" : ""}>${escapeHtml(column.label)}</option>`).join("")}`;
+    root.querySelector("#table-file").textContent = `${fileName} · ${t("tableRows", { count: table.rows.length })}`;
+    root.querySelector("#table-mapping").innerHTML = Object.entries(tableFieldLabels).map(([field, label]) => `<label><span>${label}</span><select data-table-field="${field}">${selectOptions(mapping[field])}</select></label>`).join("");
+    root.querySelector("#table-preview").innerHTML = `<div class="table-preview-scroll"><table><thead><tr>${table.columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${table.rows.slice(0, 3).map((row) => `<tr>${table.columns.map((column) => `<td>${escapeHtml(row[column.id])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    const syncTableStatus = () => {
+      const status = root.querySelector("#table-status");
+      const confirm = root.querySelector("[data-table-confirm]");
+      const result = window.AI_USAGE_STRATA_LEDGER?.inspectMappedTable({ table: pendingTable.table, mapping: pendingTable.mapping, label: pendingTable.fileName });
+      if (!result || result.error) {
+        status.textContent = result?.error || t("importTableMapping");
+        confirm.disabled = true;
+        confirm.textContent = t("tableConfirm", { count: 0 });
+        return;
+      }
+      status.textContent = result.skipped ? t("tableSkipped", { count: result.skipped }) : "";
+      confirm.disabled = false;
+      confirm.textContent = t("tableConfirm", { count: result.imported });
+    };
+    root.querySelectorAll("[data-table-field]").forEach((select) => select.addEventListener("change", () => { pendingTable.mapping[select.dataset.tableField] = select.value; syncTableStatus(); }));
+    syncTableStatus();
+    if (transition) transition.hidden = true;
+    builder?.close();
+    tableReview.showModal();
+  };
   const runLedgerAction = (action, control) => {
     if (action === "builder") openBuilder();
     if (action === "import") fileInput?.click();
@@ -389,6 +438,20 @@
     const outside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
     if (outside) builder.close();
   });
+  root.querySelector("[data-table-close]")?.addEventListener("click", () => tableReview?.close());
+  root.querySelector("[data-table-back]")?.addEventListener("click", () => tableReview?.close());
+  tableReview?.addEventListener("click", (event) => {
+    const bounds = tableReview.getBoundingClientRect();
+    const outside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+    if (outside) tableReview.close();
+  });
+  root.querySelector("[data-table-confirm]")?.addEventListener("click", () => {
+    if (!pendingTable) return;
+    showTransition(t("loadingLedger"));
+    tableReview?.close();
+    window.setTimeout(() => window.AI_USAGE_STRATA_LEDGER?.saveMappedTable({ table: pendingTable.table, mapping: pendingTable.mapping, label: pendingTable.fileName }), 120);
+  });
+  window.addEventListener("ai-usage-strata-table-preview", (event) => renderTableReview(event.detail));
   root.querySelector("[data-builder-save]")?.addEventListener("click", () => {
     const ledger = collectBuilderLedger();
     if (!ledger.records.length) {
@@ -404,7 +467,7 @@
     if (file) {
       showTransition(t("loadingLedger"));
       const isTable = /\.(csv|tsv)$/i.test(file.name) || /text\/(csv|tab-separated-values)/i.test(file.type);
-      if (isTable) window.AI_USAGE_STRATA_LEDGER?.importTableFile(file);
+      if (isTable) window.AI_USAGE_STRATA_LEDGER?.readTableFile(file);
       else window.AI_USAGE_STRATA_LEDGER?.importFile(file);
     }
     fileInput.value = "";

@@ -58,9 +58,20 @@
     const parsed = Number(cleaned);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
   };
+  const tableAliases = {
+    date: ["date", "日期", "day", "日期时间", "时间"],
+    hours: ["hours", "hour", "小时", "时长", "时数", "duration", "投入时间"],
+    minutes: ["minutes", "minute", "分钟", "min"],
+    category: ["category", "分类", "类型", "工作分类", "direction"],
+    input: ["input", "inputchars", "输入", "输入字数", "prompt", "promptchars"],
+    output: ["output", "outputchars", "输出", "输出字数", "response", "responsechars"],
+    count: ["count", "activitycount", "次数", "使用次数", "会话数", "sessions", "prompts"],
+    note: ["note", "备注", "说明", "当天说明", "evidence", "记录"]
+  };
+  const normaliseHeader = (value) => String(value || "").trim().toLowerCase().replace(/[\s_\-（）()]/g, "");
   const parseDelimited = (text) => {
     const lines = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n").filter((line) => line.trim());
-    if (lines.length < 2) return [];
+    if (lines.length < 2) return { columns: [], rows: [] };
     const delimiter = lines[0].includes("\t") ? "\t" : ",";
     const readLine = (line) => {
       const values = [];
@@ -76,45 +87,33 @@
       values.push(current.trim());
       return values;
     };
-    const headers = readLine(lines[0]).map((header) => String(header).trim().toLowerCase().replace(/[\s_\-（）()]/g, ""));
-    return lines.slice(1).map((line) => Object.fromEntries(headers.map((header, index) => [header, readLine(line)[index] || ""])));
+    const columns = readLine(lines[0]).map((label, index) => ({ id: `column-${index}`, label: String(label).trim() || `Column ${index + 1}`, normalised: normaliseHeader(label) }));
+    const rows = lines.slice(1).map((line) => Object.fromEntries(columns.map((column, index) => [column.id, readLine(line)[index] || ""])));
+    return { columns, rows };
   };
-  const tableValue = (row, aliases) => aliases.map((key) => row[key]).find((value) => String(value ?? "").trim() !== "") || "";
-  const ledgerFromTable = (text, label) => {
-    const rows = parseDelimited(text);
-    const aliases = {
-      date: ["date", "日期", "day", "日期时间", "时间"],
-      hours: ["hours", "hour", "小时", "时长", "时数", "duration", "投入时间"],
-      minutes: ["minutes", "minute", "分钟", "min"],
-      category: ["category", "分类", "类型", "工作分类", "direction"],
-      input: ["input", "inputchars", "输入", "输入字数", "prompt", "promptchars"],
-      output: ["output", "outputchars", "输出", "输出字数", "response", "responsechars"],
-      count: ["count", "activitycount", "次数", "使用次数", "会话数", "sessions", "prompts"],
-      note: ["note", "备注", "说明", "当天说明", "evidence", "记录"]
-    };
-    const records = rows.map((row) => {
-      const date = normaliseDate(tableValue(row, aliases.date));
-      const hourValue = tableValue(row, aliases.hours);
-      const hours = String(hourValue).trim() ? parseNumeric(hourValue) : parseNumeric(tableValue(row, aliases.minutes)) / 60;
-      const note = String(tableValue(row, aliases.note)).trim();
+  const suggestedTableMapping = (table) => Object.fromEntries(Object.entries(tableAliases).map(([field, aliases]) => [field, table.columns.find((column) => aliases.includes(column.normalised))?.id || ""]));
+  const tableValue = (row, mapping, field) => String(row[mapping[field]] ?? "").trim();
+  const ledgerFromTable = (table, mapping, label) => {
+    if (!mapping.date || (!mapping.hours && !mapping.minutes)) throw new Error(t("importTableMapping"));
+    const records = table.rows.map((row) => {
+      const date = normaliseDate(tableValue(row, mapping, "date"));
+      const hourValue = tableValue(row, mapping, "hours");
+      const hours = hourValue ? parseNumeric(hourValue) : parseNumeric(tableValue(row, mapping, "minutes")) / 60;
+      const note = tableValue(row, mapping, "note");
       if (!date || !Number.isFinite(hours)) return null;
       return {
         date,
         hours,
-        category: String(tableValue(row, aliases.category)).trim() || "其他",
-        input_chars: parseNumeric(tableValue(row, aliases.input)),
-        output_chars: parseNumeric(tableValue(row, aliases.output)),
-        activity_count: parseNumeric(tableValue(row, aliases.count)) || 1,
+        category: tableValue(row, mapping, "category") || "其他",
+        input_chars: parseNumeric(tableValue(row, mapping, "input")),
+        output_chars: parseNumeric(tableValue(row, mapping, "output")),
+        activity_count: parseNumeric(tableValue(row, mapping, "count")) || 1,
         confidence: "recorded",
         evidence: note ? [{ type: "note", label: note }] : []
       };
     }).filter(Boolean);
     if (!records.length) throw new Error(t("importTableInvalid"));
-    return {
-      schema_version: "1.0",
-      profile: { label: String(label || "").replace(/\.[^.]+$/, "") || t("importedLedger"), updated_at: new Date().toISOString() },
-      records
-    };
+    return { ledger: { schema_version: "1.0", profile: { label: String(label || "").replace(/\.[^.]+$/, "") || t("importedLedger"), updated_at: new Date().toISOString() }, records }, imported: records.length, skipped: table.rows.length - records.length };
   };
   const remove = () => {
     try {
@@ -231,13 +230,27 @@
       };
       reader.readAsText(file);
     },
-    importTableFile(file) {
+    readTableFile(file) {
       const reader = new FileReader();
       reader.onload = () => {
-        try { save(ledgerFromTable(String(reader.result), file.name)); }
+        try {
+          const table = parseDelimited(String(reader.result));
+          if (!table.rows.length || !table.columns.length) throw new Error(t("importTableInvalid"));
+          window.dispatchEvent(new CustomEvent("ai-usage-strata-table-preview", { detail: { fileName: file.name, table, mapping: suggestedTableMapping(table) } }));
+        }
         catch (error) { window.alert(`${t("importTableError")}：${error.message}`); }
       };
       reader.readAsText(file);
+    },
+    saveMappedTable({ table, mapping, label }) {
+      try { save(ledgerFromTable(table, mapping, label).ledger); }
+      catch (error) { window.alert(`${t("importTableError")}：${error.message}`); }
+    },
+    inspectMappedTable({ table, mapping, label }) {
+      try {
+        const result = ledgerFromTable(table, mapping, label);
+        return { imported: result.imported, skipped: result.skipped };
+      } catch (error) { return { error: error.message }; }
     },
     saveLedger(next) {
       try { save(next); }

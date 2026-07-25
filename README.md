@@ -57,7 +57,7 @@ The tool will never quietly fill a blank day and present it as a fact.
 1. Open the [live app](https://novakepler513.github.io/ai-usage-strata/). It starts with no data, by design.
 2. Choose “View example” to explore a fictional Atlas Lab case: rotate the waterfall, choose a category, change Time to Input or Output, and open a date mark.
 3. Choose “Start entering” and add a date plus hours; that is enough for a first record.
-4. Or import an existing table: [`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) shows the accepted CSV shape. CSV and TSV headers such as `date`, `hours`, `category`, `input`, `output`, and `count` are mapped automatically.
+4. Or import an existing table: [`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) shows the accepted CSV shape. CSV and TSV headers such as `date`, `hours`, `category`, `input`, `output`, and `count` are suggested automatically, then shown for you to confirm or remap before anything is saved.
 5. JSON is optional: [`examples/minimal-ledger.json`](examples/minimal-ledger.json) is the portable backup and advanced-editing format. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
 6. Export your ledger for a portable backup whenever you want.
 

@@ -8,7 +8,9 @@ template, and advanced editing.
 ## Bring a normal table first
 
 Save a spreadsheet as CSV or TSV, then choose **Import ledger / table**. The
-converter recognises these common headers (Chinese and English can be mixed):
+converter suggests these common headers (Chinese and English can be mixed),
+then shows a preview and mapping screen before import. You can choose the
+meaning of an unfamiliar column yourself:
 
 | Table column | Saved field |
 | --- | --- |
@@ -20,7 +22,9 @@ converter recognises these common headers (Chinese and English can be mixed):
 
 Every converted row needs a valid calendar date plus hours or minutes. Rows
 that do not meet that minimum are not silently invented; if no valid row can
-be read, the import explains what is missing.
+be read, the import explains what is missing. This is deliberately a local,
+deterministic converter rather than an AI guesser: it never uploads your table
+or makes a judgement about an ambiguous column without your confirmation.
 
 ```json
 {

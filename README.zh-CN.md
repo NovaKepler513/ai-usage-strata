@@ -57,7 +57,7 @@ AI Usage Strata 把你主动保留的一小份账本，变成一个可以查看�
 1. 先打开[在线页面](https://novakepler513.github.io/ai-usage-strata/)，它会有意从“没有数据”开始。
 2. 点“查看示例”后，才会加载 Atlas Lab 虚构案例；再试着旋转瀑布图、勾选分类、切换时间／输入／输出，并打开一个日期刻痕。
 3. 点“开始填写”，先记一条日期和小时数；这已经足够形成第一条记录。
-4. 或导入已有表格：[`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) 展示了 CSV 写法。CSV／TSV 中的 `日期/date`、`小时/hours`、`分类/category`、`输入/input`、`输出/output`、`次数/count` 会自动对应。
+4. 或导入已有表格：[`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) 展示了 CSV 写法。CSV／TSV 中的 `日期/date`、`小时/hours`、`分类/category`、`输入/input`、`输出/output`、`次数/count` 会先自动建议对应关系，再由你确认或手动改列；确认前不会写入账本。
 5. JSON 是选填：[`examples/minimal-ledger.json`](examples/minimal-ledger.json) 是方便备份、迁移和高级编辑的格式；如果有经常回看的冲刺期、审计期或报告期，再加上 `reference_window`。
 6. 需要备份时，导出自己的账本。
 
