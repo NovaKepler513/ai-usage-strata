@@ -56,6 +56,7 @@
   let selectionStart = parseISO(data.view?.start || data.history?.start || data.range.start);
   let selectionEnd = parseISO(data.view?.end || data.history?.end || data.range.end);
   let activeMetric = "time";
+  let selectedModuleNames = new Set(moduleOrder);
   let cleanupWaterfall = () => {};
   let redrawWaterfall = () => {};
 
@@ -885,32 +886,70 @@
     const metric = metrics[activeMetric];
     const useMonths = days.length > 62;
     const periods = (useMonths ? monthlyGroups(days) : weeklyGroups(days)).reverse();
-    const maximum = Math.max(1, ...periods.map((period) => period.summary[metric.field]));
-    const selectedModules = moduleTotals(days);
-    const activeModules = moduleOrder.filter((name) => selectedModules[name] > 0);
-    root.querySelector("#weekly-title").textContent = useMonths ? t("monthView") : t("weekView");
-    root.querySelector("#weekly-subtitle").textContent = isEnglish ? `Longer bars mean ${metric.barPhrase}; colour shows the main work category.` : `条带越长，${metric.barPhrase}；颜色表示主要花在哪类工作上。`;
-    root.querySelector("#period-label").textContent = useMonths ? t("monthLabel") : t("weekLabel");
-    root.querySelector("#module-legend").innerHTML = activeModules.map((name) => `<span><i class="${moduleTone.get(name)}"></i>${escapeHtml(category(name))}</span>`).join("");
-    root.querySelector("#week-metric-label").textContent = `${metric.short} ${t("investment")}`;
-    root.querySelector("#weekly-list").innerHTML = periods.length ? periods.map((period) => {
+    const rangeModules = moduleTotals(days);
+    const availableModules = moduleOrder.filter((name) => rangeModules[name] > 0);
+    let activeModules = availableModules.filter((name) => selectedModuleNames.has(name));
+    if (!activeModules.length && availableModules.length) {
+      selectedModuleNames = new Set(availableModules);
+      activeModules = availableModules;
+    }
+    const totalRangeTouches = Object.values(rangeModules).reduce((total, value) => total + value, 0);
+    const selectedRangeTouches = activeModules.reduce((total, name) => total + (rangeModules[name] || 0), 0);
+    const selectedRatio = totalRangeTouches ? selectedRangeTouches / totalRangeTouches : 0;
+    const selectedTotal = metric.format(estimateFor(days)[metric.field] * selectedRatio);
+    const periodValues = periods.map((period) => {
       const totalTouches = Object.values(period.modules).reduce((total, value) => total + value, 0);
+      const activeTouches = activeModules.reduce((total, name) => total + (period.modules[name] || 0), 0);
+      return totalTouches ? period.summary[metric.field] * activeTouches / totalTouches : 0;
+    });
+    const maximum = Math.max(1, ...periodValues);
+    root.querySelector("#weekly-title").textContent = useMonths ? t("monthView") : t("weekView");
+    root.querySelector("#weekly-subtitle").textContent = t("categoryHint");
+    root.querySelector("#period-label").textContent = useMonths ? t("monthLabel") : t("weekLabel");
+    root.querySelector("#module-legend").innerHTML = availableModules.length ? `
+      <div class="module-toolbar"><p>${t("categoryChoose")}</p><button type="button" data-module-action="all">${t("selectAll")}</button></div>
+      <div class="module-filters">${availableModules.map((name) => {
+        const share = totalRangeTouches ? rangeModules[name] / totalRangeTouches : 0;
+        const allocation = metric.format(estimateFor(days)[metric.field] * share);
+        const checked = selectedModuleNames.has(name);
+        return `<button type="button" class="module-filter ${moduleTone.get(name)}" data-module="${escapeHtml(name)}" aria-pressed="${checked}"><i></i><span>${escapeHtml(category(name))}</span><b>${t("approx")} ${escapeHtml(allocation)}</b></button>`;
+      }).join("")}</div>
+      <p class="module-reading">${t("selectedCategories", { count: activeModules.length, value: selectedTotal, share: percent(selectedRatio) })}</p>
+    ` : "";
+    root.querySelector("#week-metric-label").textContent = t("selectedMetric", { metric: metric.short });
+    root.querySelector("#weekly-list").innerHTML = periods.length ? periods.map((period, index) => {
+      const totalTouches = Object.values(period.modules).reduce((total, value) => total + value, 0);
+      const activeTouches = activeModules.reduce((total, name) => total + (period.modules[name] || 0), 0);
       const segments = activeModules.filter((name) => period.modules[name] > 0).map((name) => {
-        const share = totalTouches ? period.modules[name] / totalTouches : 0;
+        const share = activeTouches ? period.modules[name] / activeTouches : 0;
         return `<span class="week-segment ${moduleTone.get(name)}" style="--share:${share * 100}" aria-label="${escapeHtml(category(name))} ${percent(share)}"></span>`;
       }).join("");
-      const leading = Object.entries(period.modules).sort((a, b) => b[1] - a[1])[0];
+      const leading = activeModules.map((name) => [name, period.modules[name] || 0]).sort((a, b) => b[1] - a[1])[0];
       const leadingLabel = leading && leading[1] > 0 ? category(leading[0]) : (isEnglish ? "Uncategorised" : "没有分类");
-      const magnitude = period.summary[metric.field] / maximum;
+      const value = periodValues[index];
+      const magnitude = value / maximum;
       return `<article class="week-row">
         <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} ${t("recordedDays")} · ${period.summary.commits} ${t("uses")} · ${t("viewRecords")}</small></a>
-        <b class="week-metric">${escapeHtml(metric.format(period.summary[metric.field]))}</b>
+        <b class="week-metric">${t("approx")} ${escapeHtml(metric.format(value))}</b>
         <div class="week-allocation">
-          <div class="week-scale"><div class="week-track" style="--magnitude:${Math.max(magnitude ? 4 : 0, magnitude * 100)}%" role="img" aria-label="${escapeHtml(period.label)} ${metric.short}${escapeHtml(metric.format(period.summary[metric.field]))}；主要花在 ${escapeHtml(leadingLabel)}">${segments || "<span class=\"week-empty\"></span>"}</div></div>
+          <div class="week-scale"><div class="week-track" style="--magnitude:${Math.max(magnitude ? 4 : 0, magnitude * 100)}%" role="img" aria-label="${escapeHtml(period.label)} ${t("selectedMetric", { metric: metric.short })} ${escapeHtml(metric.format(value))}; ${escapeHtml(leadingLabel)}">${segments || "<span class=\"week-empty\"></span>"}</div></div>
           <small>${escapeHtml(leadingLabel)}</small>
         </div>
       </article>`;
     }).join("") : `<p class="empty-state">${t("noRecords")}</p>`;
+    root.querySelector("[data-module-action=all]")?.addEventListener("click", () => {
+      selectedModuleNames = new Set(availableModules);
+      renderWeekly(days);
+    });
+    root.querySelectorAll("[data-module]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const name = button.dataset.module;
+        if (selectedModuleNames.has(name) && activeModules.length === 1) return;
+        if (selectedModuleNames.has(name)) selectedModuleNames.delete(name);
+        else selectedModuleNames.add(name);
+        renderWeekly(days);
+      });
+    });
   };
 
   const renderEvidence = (summary) => {
