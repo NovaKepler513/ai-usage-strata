@@ -209,9 +209,11 @@ main { padding-top: 24px; }
 .ledger-guide .guide-export + .ledger-action { margin-right: 8px; }
 .ledger-builder { width: min(900px, calc(100% - 32px)); max-height: min(800px, calc(100vh - 32px)); padding: 0; overflow: auto; border: 1px solid color-mix(in srgb, var(--cool-strong) 24%, var(--line)); border-radius: 18px; color: var(--ink); background: var(--paper); box-shadow: var(--shadow); }
 .ledger-builder::backdrop { background: rgba(20, 29, 35, 0.26); backdrop-filter: blur(3px); }
-.ledger-builder > div { padding: 30px; }
+.ledger-builder > div { position: relative; padding: 30px; }
 .ledger-builder h2 { margin: 0 0 10px; font-size: 24px; letter-spacing: -0.03em; }
 .ledger-builder > div > p:not(.eyebrow) { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.7; }
+.builder-close { position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink-3); background: color-mix(in srgb, var(--paper-strong) 90%, transparent); font-size: 20px; line-height: 1; cursor: pointer; }
+.builder-close:hover { border-color: color-mix(in srgb, var(--warm-strong) 40%, var(--line)); color: var(--warm-strong); background: color-mix(in srgb, var(--peach) 12%, var(--paper-strong)); }
 .builder-name { display: grid; gap: 6px; margin: 20px 0 12px; }
 .builder-name > span, .builder-row label > span { color: var(--ink-3); font-size: 10px; }
 .builder-name input, .builder-row input { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; outline: none; background: var(--paper-strong); color: var(--ink); font: 12px var(--mono); }
@@ -408,6 +410,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .empty-ledger-card .strata-sign { width: 58px; height: 40px; }
   .empty-ledger-actions { grid-column: 1; }
   .ledger-builder > div { padding: 22px; }
+  .builder-close { top: 13px; right: 13px; }
   .ledger-builder h2 { font-size: 21px; }
   .builder-row { grid-template-columns: 1fr 1fr; gap: 10px; }
   .builder-row label:nth-child(3), .builder-row label:nth-child(6) { grid-column: 1 / -1; }

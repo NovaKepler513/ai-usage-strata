@@ -289,6 +289,7 @@
       </dialog>
       <dialog class="ledger-builder" id="ledger-builder">
         <div>
+          <button class="builder-close" type="button" data-builder-close aria-label="${t("closeBuilder")}" title="${t("closeBuilder")}">×</button>
           <p class="eyebrow">${t("startLedger")}</p>
           <h2>${t("builderTitle")}</h2>
           <p>${t("builderCopy")}</p>
@@ -384,6 +385,12 @@
   root.querySelector("[data-guide-close]")?.addEventListener("click", () => root.querySelector("#ledger-guide")?.close());
   root.querySelector("[data-builder-add]")?.addEventListener("click", () => addBuilderRow());
   root.querySelector("[data-builder-cancel]")?.addEventListener("click", () => builder?.close());
+  root.querySelector("[data-builder-close]")?.addEventListener("click", () => builder?.close());
+  builder?.addEventListener("click", (event) => {
+    const bounds = builder.getBoundingClientRect();
+    const outside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+    if (outside) builder.close();
+  });
   root.querySelector("[data-builder-save]")?.addEventListener("click", () => {
     const ledger = collectBuilderLedger();
     if (!ledger.records.length) {
