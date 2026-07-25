@@ -8,6 +8,7 @@ tools, or a script you write yourself.
 {
   "schema_version": "1.0",
   "profile": { "label": "My workspace", "updated_at": "2026-07-24T18:00:00" },
+  "reference_window": { "start": "2026-07-01", "end": "2026-07-31", "label": "July review" },
   "records": []
 }
 ```
@@ -28,6 +29,17 @@ tools, or a script you write yourself.
 
 An evidence URL is optional. It can point to a local record in your own system,
 but do not put private local paths in a ledger you plan to share.
+
+## Optional reference period
+
+`reference_window` is an optional saved date range. When it is present, the
+page adds a “Reference period” shortcut beside All, This month, and Last 4
+weeks. It is useful for revisiting one audit, sprint, or reporting period
+without replacing the complete ledger.
+
+Its `start` and `end` values must be `YYYY-MM-DD`, be in chronological order,
+and fall inside the dates covered by `records`. `label` is optional and stays
+in the JSON as a reminder; it is not sent anywhere.
 
 ## Honest estimates
 

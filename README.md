@@ -16,6 +16,7 @@ for people who want the useful question — “what did I actually put into this
 - The same time-strata reading structure throughout: overview, 3D waterfall
   ridges, preset views, date marks, weekly allocation, and evidence.
 - Direct start/end date rollers, all-history views, and point-level evidence inspection.
+- An optional saved reference period, alongside All, This month, and Last 4 weeks.
 - Clickable category filters that show each selected category's estimated share of the chosen period.
 - Automatic category expansion: new categories appear without changing code.
 - Import, export, and reset controls. Imported data stays in the browser.
@@ -34,8 +35,9 @@ for people who want the useful question — “what did I actually put into this
 ## Start in 30 seconds
 
 1. Download or clone this repository.
-2. Open `index.html` in a modern browser. No build step or server is needed.
-   On macOS, double-click `启动·AI Usage Strata.command`.
+2. On macOS, double-click `启动·AI Usage Strata.command`. It starts a local-only
+   server at `127.0.0.1:8770` and opens the app. On other systems, serve this
+   folder with any static-file server, then open `index.html`.
 3. Use the sample data first, then choose “导入账本” to select your own JSON
    file.
 4. Click a point on the ridgeline to inspect that day’s evidence.
@@ -104,3 +106,11 @@ The terms file should stay outside this repository. More detail is in
 MIT © 2026 Nova Kepler. See [LICENSE](LICENSE).
 
 The included demo ledger is fictional and may be reused with the code.
+
+## Contributing
+
+Contributions are welcome: bug fixes, accessibility improvements, translations,
+import adapters, example ledgers, and better documentation all count. Start
+with [CONTRIBUTING.md](CONTRIBUTING.md), check the [security policy](SECURITY.md),
+and open an issue before a large change so the local-first privacy boundary
+stays intact.

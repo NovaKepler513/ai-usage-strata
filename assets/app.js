@@ -52,6 +52,10 @@
 
   const historyStart = parseISO(data.history?.start || data.range.start);
   const historyEnd = parseISO(data.history?.end || data.range.end);
+  const maxMonth = monthKey(historyEnd);
+  const referenceWindow = data.reference_window?.start && data.reference_window?.end
+    ? { start: parseISO(data.reference_window.start), end: parseISO(data.reference_window.end), label: data.reference_window.label || "" }
+    : null;
   const calibration = data.calibration;
   let selectionStart = parseISO(data.view?.start || data.history?.start || data.range.start);
   let selectionEnd = parseISO(data.view?.end || data.history?.end || data.range.end);
@@ -61,6 +65,7 @@
   let redrawWaterfall = () => {};
 
   const estimateFor = (days) => window.AI_USAGE_STRATA_ESTIMATOR.estimateFor(days, calibration);
+  const isReferenceSelection = () => Boolean(referenceWindow && iso(selectionStart) === iso(referenceWindow.start) && iso(selectionEnd) === iso(referenceWindow.end));
 
   const groupDays = (days, keyFor) => {
     const groups = new Map();
@@ -180,6 +185,7 @@
             </div>
           </div>
           <div class="range-presets" aria-label="${t("quickRange")}">
+            ${referenceWindow ? `<button type="button" data-preset="reference">${t("referencePeriod")}</button>` : ""}
             <button type="button" data-preset="all">${t("all")}</button>
             <button type="button" data-preset="current">${t("currentMonth")}</button>
             <button type="button" data-preset="four-weeks">${t("fourWeeks")}</button>
@@ -264,8 +270,6 @@
     if (file) window.AI_USAGE_STRATA_LEDGER?.importFile(file);
     fileInput.value = "";
   });
-  const maxMonth = monthKey(historyEnd);
-
   const setTheme = (theme) => {
     document.documentElement.dataset.theme = theme;
     root.querySelector(".theme-switch")?.setAttribute("aria-pressed", String(theme === "dark"));
@@ -965,6 +969,7 @@
   const renderPresetState = () => {
     root.querySelectorAll("[data-preset]").forEach((button) => {
       let active = false;
+      if (button.dataset.preset === "reference") active = isReferenceSelection();
       if (button.dataset.preset === "all") active = iso(selectionStart) === iso(historyStart) && iso(selectionEnd) === iso(historyEnd);
       if (button.dataset.preset === "current") active = iso(selectionStart) === iso(monthStart(maxMonth)) && iso(selectionEnd) === iso(historyEnd);
       if (button.dataset.preset === "four-weeks") active = iso(selectionStart) === iso(addDays(historyEnd, -27)) && iso(selectionEnd) === iso(historyEnd);
@@ -1006,6 +1011,7 @@
 
   root.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.preset === "reference" && referenceWindow) setSelection(new Date(referenceWindow.start), new Date(referenceWindow.end));
       if (button.dataset.preset === "all") setSelection(new Date(historyStart), new Date(historyEnd));
       if (button.dataset.preset === "current") setSelection(monthStart(maxMonth), new Date(historyEnd));
       if (button.dataset.preset === "four-weeks") setSelection(addDays(historyEnd, -27), new Date(historyEnd));

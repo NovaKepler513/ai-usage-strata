@@ -15,7 +15,10 @@
     const invalid = ledger.records.find((record) => !record || !/^\d{4}-\d{2}-\d{2}$/.test(record.date || "") || !Number.isFinite(Number(record.hours)) || Number(record.hours) < 0);
     if (invalid) return t("importInvalid");
     const unsupportedEstimate = ledger.records.find((record) => record.confidence === "estimated" && !String(record.estimate_basis || "").trim());
-    return unsupportedEstimate ? t("importEstimate") : "";
+    if (unsupportedEstimate) return t("importEstimate");
+    const window = ledger.reference_window;
+    if (window && (!/^\d{4}-\d{2}-\d{2}$/.test(window.start || "") || !/^\d{4}-\d{2}-\d{2}$/.test(window.end || "") || window.start > window.end)) return t("importReference");
+    return "";
   };
   const read = () => {
     try {
@@ -36,6 +39,10 @@
   })).sort((left, right) => left.date.localeCompare(right.date));
   const start = records[0]?.date || iso(new Date());
   const end = records.at(-1)?.date || start;
+  const suppliedReference = ledger.reference_window;
+  const referenceWindow = suppliedReference && suppliedReference.start >= start && suppliedReference.end <= end
+    ? { start: suppliedReference.start, end: suppliedReference.end, label: String(suppliedReference.label || "") }
+    : null;
   const byDate = new Map();
   records.forEach((record) => {
     if (!byDate.has(record.date)) byDate.set(record.date, []);
@@ -92,6 +99,7 @@
     range: { start, end, days: timeline.length, title: `${start} — ${end}` },
     view: { start, end },
     history: { start, end, days: timeline.length },
+    reference_window: referenceWindow,
     profile: { label: ledger.profile?.label || "我的 AI 用量账本", imported: Boolean(read()) },
     git: { commits: activitySignals, semantic_commits: records.length, active_days: activeDays },
     ai_logs: { entries: records.length },

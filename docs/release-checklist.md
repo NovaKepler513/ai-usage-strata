@@ -17,12 +17,16 @@ Run this checklist before a public push, tag, ZIP, or screenshot pack.
    in the release.
 6. Check that the commit identity is a deliberate public identity, not an
    automatic global Git setting.
-7. Open `index.html`, import a throwaway ledger, export it, and reset to demo.
+7. Start the local launcher, import a throwaway ledger, export it, reset to
+   demo, and verify the Reference period shortcut if the ledger contains one.
 8. Check both 中文 and English in the language switch. New visible interface
    copy belongs in `assets/i18n.js`; do not add one-language-only controls or
    explanatory text.
 9. After publication, clone the remote repository into a new folder and repeat
    the audit there. A local draft is not proof of what was published.
+10. If GitHub Pages is enabled, inspect the deployed URL in both languages and
+    confirm that importing a ledger still stays in that browser only.
 
-The current repository is a preparation only. Creating a public remote and
-pushing it should be a separate, deliberate decision.
+Before the first public push, confirm which GitHub account or organisation will
+be shown as the repository owner. The commit author can be a pseudonym, but the
+repository owner is always visible on GitHub.

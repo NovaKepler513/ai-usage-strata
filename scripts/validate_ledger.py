@@ -37,6 +37,20 @@ def main() -> None:
             fail(f"record {index} has negative hours")
         if record.get("confidence") == "estimated" and not str(record.get("estimate_basis", "")).strip():
             fail(f"record {index} is estimated but has no estimate_basis")
+    reference = payload.get("reference_window")
+    if reference is not None:
+        if not isinstance(reference, dict):
+            fail("reference_window must be an object")
+        try:
+            reference_start = date.fromisoformat(str(reference["start"]))
+            reference_end = date.fromisoformat(str(reference["end"]))
+        except (KeyError, TypeError, ValueError):
+            fail("reference_window needs ISO start and end dates")
+        if reference_start > reference_end:
+            fail("reference_window start is after end")
+        record_dates = [date.fromisoformat(str(record["date"])) for record in records]
+        if record_dates and (reference_start < min(record_dates) or reference_end > max(record_dates)):
+            fail("reference_window must fall inside the ledger record range")
     print(f"Valid ledger: {len(records)} records")
 
 

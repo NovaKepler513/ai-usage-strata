@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible problem without sharing private ledger data.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Use fictional data only. Never attach a real ledger, local path, token, or private screenshot."
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal fictional reproduction
+      description: "Steps, browser, and a redacted example if needed."
+    validations:
+      required: true

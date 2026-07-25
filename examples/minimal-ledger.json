@@ -3,6 +3,11 @@
   "profile": {
     "label": "My workspace"
   },
+  "reference_window": {
+    "start": "2026-07-24",
+    "end": "2026-07-25",
+    "label": "First two days"
+  },
   "records": [
     {
       "date": "2026-07-24",
