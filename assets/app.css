@@ -46,7 +46,8 @@
 
 .ledger-action:hover { border-color: var(--cool); color: var(--cool-strong); }
 .ledger-action-quiet { background: transparent; }
-.language-switch { min-width: 42px; color: var(--cool-strong); font-family: var(--mono); font-size: 9px; letter-spacing: 0.05em; }
+.language-switch { appearance: none; min-width: 0; padding: 7px 4px; border: 0; background: transparent; color: var(--cool-strong); font-family: var(--mono); font-size: 9px; font-weight: 650; letter-spacing: 0.07em; line-height: 1; cursor: pointer; }
+.language-switch:hover { color: var(--warm-strong); }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -115,7 +116,14 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 .app-wordmark > span { grid-column: 1 / -1; margin-bottom: 2px; color: var(--cool-strong); font-family: var(--mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; }
 .app-wordmark h1 { margin: 0; font-family: "Songti SC", "STSong", serif; font-size: 22px; font-weight: 600; letter-spacing: 0.04em; }
 .app-wordmark p { margin: 0; color: var(--ink-3); font-size: 10px; letter-spacing: 0.04em; }
-.app-actions { display: flex; align-items: center; gap: 14px; }
+.app-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.nav-group { display: flex; align-items: center; gap: 6px; }
+.nav-support, .nav-display { padding-left: 14px; border-left: 1px solid var(--line); }
+.nav-primary .nav-primary-action { border-color: color-mix(in srgb, var(--cool-strong) 28%, var(--line)); color: var(--ink); box-shadow: 0 1px 7px color-mix(in srgb, var(--cool-strong) 6%, transparent); }
+.nav-support { gap: 2px; }
+.nav-support .ledger-action { padding-right: 6px; padding-left: 6px; border-color: transparent; color: var(--ink-3); font-weight: 560; }
+.nav-support .ledger-action:hover { border-color: transparent; background: color-mix(in srgb, var(--cool) 9%, transparent); color: var(--cool-strong); }
+.nav-display { gap: 10px; }
 .theme-switch { position: relative; width: 39px; height: 22px; padding: 0; border: 1px solid color-mix(in srgb, var(--cool-strong) 24%, var(--line)); border-radius: 99px; background: linear-gradient(90deg, color-mix(in srgb, var(--cool) 22%, transparent), color-mix(in srgb, var(--peach) 18%, transparent)); cursor: pointer; }
 .theme-switch span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--paper-strong); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); transition: transform 180ms ease; }
 .theme-switch[aria-pressed="true"] span { transform: translateX(17px); }
@@ -419,6 +427,9 @@ main { padding-top: 24px; }
 .evidence-empty { margin: 0; padding: 18px 0; color: var(--ink-3); font-size: 11px; }
 
 @media (max-width: 820px) {
+  .app-bar { height: auto; min-height: 82px; align-items: flex-start; padding: 12px 0; }
+  .app-actions { max-width: 480px; flex-wrap: wrap; justify-content: flex-end; gap: 7px 10px; }
+  .nav-support, .nav-display { padding-left: 10px; }
   .command-bar { grid-template-columns: 1fr auto; }
   .selection-reading { grid-column: 1 / -1; justify-self: start; margin-left: 5px; }
   .overview-section { grid-template-columns: 1fr; gap: 28px; }
@@ -432,13 +443,16 @@ main { padding-top: 24px; }
 
 @media (max-width: 620px) {
   .report-shell { width: min(100% - 24px, 520px); }
-  .app-bar { height: auto; min-height: 76px; align-items: flex-start; padding: 12px 0; }
+  .app-bar { min-height: 76px; }
   .strata-sign { width: 60px; height: 44px; }
   .app-wordmark h1 { font-size: 19px; }
   .app-wordmark p { display: none; }
-  .app-actions { max-width: 184px; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+  .app-actions { max-width: 218px; gap: 5px 7px; }
+  .nav-group { gap: 3px; }
+  .nav-support, .nav-display { padding-left: 7px; }
+  .nav-support .ledger-action { padding: 8px 4px; }
   .ledger-action { padding: 8px; font-size: 10px; }
-  .language-switch { min-width: 34px; }
+  .language-switch { padding: 7px 3px; }
   main { padding-top: 16px; }
   .command-bar { grid-template-columns: 1fr; gap: 10px; }
   .range-labels { grid-template-columns: 1fr 1fr; gap: 18px; }

@@ -145,22 +145,26 @@
     return mixColor(ridgePalette[start], ridgePalette[end], scaled - start);
   };
   const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
-  const ledgerActions = isEmptyLedger ? `
-    <button class="ledger-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("import")}</button>
+  const primaryActions = isEmptyLedger ? `
+    <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("import")}</button>` : isDemo ? `
+    <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("importOwn")}</button>` : `
+    <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("enterLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("replaceLedger")}</button>`;
+  const supportActions = isEmptyLedger ? `
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="demo">${t("viewDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : isDemo ? `
-    <button class="ledger-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("importOwn")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("exitDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : `
-    <button class="ledger-action" type="button" data-ledger-action="builder">${t("enterLedger")}</button>
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("replaceLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">${t("downloadCurrent")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("clearLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>`;
+  const ledgerActions = `
+    <div class="nav-group nav-primary">${primaryActions}</div>
+    <div class="nav-group nav-support">${supportActions}</div>`;
 
   root.innerHTML = `
     <div class="report-shell" data-metric="time" data-ledger-state="${hasRecords ? (isDemo ? "demo" : "ledger") : "empty"}">
@@ -178,8 +182,10 @@
         </div>
         <div class="app-actions">
           ${ledgerActions}
-          <button class="ledger-action ledger-action-quiet language-switch" type="button" data-language-switch>${t("language")}</button>
-          <button class="theme-switch" type="button" aria-label="${t("switchTheme")}" aria-pressed="false"><span></span></button>
+          <div class="nav-group nav-display">
+            <button class="language-switch" type="button" data-language-switch>${t("language")}</button>
+            <button class="theme-switch" type="button" aria-label="${t("switchTheme")}" aria-pressed="false"><span></span></button>
+          </div>
         </div>
       </header>
 
