@@ -18,7 +18,10 @@ Run this checklist before a public push, tag, ZIP, or screenshot pack.
 6. Check that the commit identity is a deliberate public identity, not an
    automatic global Git setting.
 7. Open `index.html`, import a throwaway ledger, export it, and reset to demo.
-8. After publication, clone the remote repository into a new folder and repeat
+8. Check both 中文 and English in the language switch. New visible interface
+   copy belongs in `assets/i18n.js`; do not add one-language-only controls or
+   explanatory text.
+9. After publication, clone the remote repository into a new folder and repeat
    the audit there. A local draft is not proof of what was published.
 
 The current repository is a preparation only. Creating a public remote and
