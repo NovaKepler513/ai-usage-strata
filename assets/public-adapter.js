@@ -10,11 +10,11 @@
   const sum = (items, field) => items.reduce((total, item) => total + number(item[field]), 0);
 
   const validate = (ledger) => {
-    if (!ledger || !Array.isArray(ledger.records)) return "The file needs a records array.";
+    if (!ledger || !Array.isArray(ledger.records)) return "这个账本里没有可读取的记录。";
     const invalid = ledger.records.find((record) => !record || !/^\d{4}-\d{2}-\d{2}$/.test(record.date || "") || !Number.isFinite(Number(record.hours)) || Number(record.hours) < 0);
-    if (invalid) return "Every record needs an ISO date and non-negative hours.";
+    if (invalid) return "每条记录都要有日期，投入时间不能小于 0。";
     const unsupportedEstimate = ledger.records.find((record) => record.confidence === "estimated" && !String(record.estimate_basis || "").trim());
-    return unsupportedEstimate ? "Estimated records need estimate_basis." : "";
+    return unsupportedEstimate ? "标为“估算”的记录，需要补一句估算依据。" : "";
   };
   const read = () => {
     try {
@@ -108,9 +108,9 @@
     },
     calibration,
     evidence: [
-      { name: "活动记录", status: "已记录", detail: "来自你主动导入的账本；不读取电脑中的聊天、文件或日历。" },
-      { name: "已记录的 AI 用量", status: "已记录", detail: "输入、输出和已记录时间来自账本字段。" },
-      { name: "估算记录", status: "估算", detail: "估算日期必须附带 estimate_basis，页面不会把它伪装成确证。" }
+      { name: "这次留下的记录", status: "已记录", detail: "只来自你主动导入的账本；不会读取电脑里的聊天、文件或日历。" },
+      { name: "已经记下的用量", status: "已记录", detail: "时间、输入和输出，按你账本里的数字显示。" },
+      { name: "还原出来的部分", status: "估算", detail: "每条估算都要写清楚为什么这么算，不会被装成精确数字。" }
     ]
   };
 

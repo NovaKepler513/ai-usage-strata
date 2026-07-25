@@ -237,8 +237,8 @@
           <summary><span>这些数字怎么算的</span><small id="evidence-summary"></small></summary>
           <div class="evidence-list" id="evidence-grid"></div>
           <div class="method-copy">
-            <p>估算依据：${escapeHtml(data.baseline.range)}。已记录的时间不会被估算改小；估算日期必须在账本里留下原因。</p>
-            <p>这个页面不读取聊天记录、文件或日历。它只展示你主动导入的账本，不把缺失部分包装成准确数字。</p>
+            <p>估算时会参考：${escapeHtml(data.baseline.range)}。已经记下的数字不会被改动；需要估算时，账本里会留下一句说明。</p>
+            <p>这个页面不会读取你的聊天、文件或日历。它只展示你主动导入的账本；没有记下来的部分，不会被装成确定答案。</p>
           </div>
         </details>
         <dialog class="month-picker" id="month-picker" aria-labelledby="month-picker-title">
@@ -954,7 +954,7 @@
       const leadingLabel = leading && leading[1] > 0 ? leading[0] : "没有分类";
       const magnitude = period.summary[metric.field] / maximum;
       return `<article class="week-row">
-        <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} 个活跃日 · ${period.summary.commits} 条活动 · 看记录</small></a>
+        <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} 天有记录 · ${period.summary.commits} 次使用 · 看记录</small></a>
         <b class="week-metric">${escapeHtml(metric.format(period.summary[metric.field]))}</b>
         <div class="week-allocation">
           <div class="week-scale"><div class="week-track" style="--magnitude:${Math.max(magnitude ? 4 : 0, magnitude * 100)}%" role="img" aria-label="${escapeHtml(period.label)} ${metric.short}${escapeHtml(metric.format(period.summary[metric.field]))}；主要花在 ${escapeHtml(leadingLabel)}">${segments || "<span class=\"week-empty\"></span>"}</div></div>
@@ -966,11 +966,11 @@
 
   const renderEvidence = (summary) => {
     const rows = [
-      { label: "导入的活动记录", state: "已记录", tone: "measured", detail: `${summary.commits} 条活动，分布在 ${summary.activeDays} 个活跃日。` },
-      { label: "已记录的 AI 用量", state: "已记录", tone: "measured", detail: `记录到 ${hours(summary.measuredHours)}；你的输入 ${compact(summary.loggedInput)}，AI 返回 ${compact(summary.loggedOutput)}。` },
-      { label: "没有完整记录的部分", state: "估算", tone: "estimated", detail: `已记录数据覆盖 ${percent(summary.coverage)} 的活跃日；缺失部分只显示估算范围。` }
+      { label: "这次留下的记录", state: "已记录", tone: "measured", detail: `${summary.commits} 次使用，分布在 ${summary.activeDays} 个有记录的日子。` },
+      { label: "已经记下的用量", state: "已记录", tone: "measured", detail: `记下 ${hours(summary.measuredHours)}；你输入 ${compact(summary.loggedInput)}，AI 返回 ${compact(summary.loggedOutput)}。` },
+      { label: "还原出来的部分", state: "估算", tone: "estimated", detail: `有用量记录的日子占 ${percent(summary.coverage)}；没有记全的部分，只给出大致范围。` }
     ];
-    root.querySelector("#evidence-summary").textContent = `${percent(summary.coverage)} 的活跃日有已记录用量`;
+    root.querySelector("#evidence-summary").textContent = `${percent(summary.coverage)} 的有记录日子里能找到用量`;
     root.querySelector("#evidence-grid").innerHTML = rows.map((item) => `<div class="evidence-row evidence-${item.tone}"><strong>${item.label}</strong><span>${item.state}</span><p>${item.detail}</p></div>`).join("");
   };
 
@@ -1001,7 +1001,7 @@
     metricStatus.textContent = isEstimated ? "估算" : "已记录";
     metricStatus.className = `evidence-status ${isEstimated ? "evidence-estimate" : "evidence-confirmed"}`;
     root.querySelector("#metric-total").textContent = metric.format(summary[metric.field]);
-    root.querySelector("#metric-scope").textContent = `${summary.activeDays} 个活跃日 · ${summary.commits} 条活动`;
+    root.querySelector("#metric-scope").textContent = `${summary.activeDays} 天有记录 · ${summary.commits} 次使用`;
     root.querySelector("#metric-range").textContent = metric.rangeFormat(metricRange);
     root.querySelector(".metric-context small").textContent = isEstimated ? "估算范围" : "统计值";
     root.querySelector("#metric-measured").textContent = metric.format(summary[metric.measured]);
