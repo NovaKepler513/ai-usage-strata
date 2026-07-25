@@ -46,6 +46,7 @@
 
 .ledger-action:hover { border-color: var(--cool); color: var(--cool-strong); }
 .ledger-action-quiet { background: transparent; }
+.language-switch { min-width: 42px; color: var(--cool-strong); font-family: var(--mono); font-size: 9px; letter-spacing: 0.05em; }
 
 :root[data-theme="dark"] {
   color-scheme: dark;

@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = "ai-usage-strata-ledger-v1";
   const source = window.AI_USAGE_STRATA_DEMO;
+  const t = window.AI_USAGE_STRATA_I18N?.t || ((key) => key);
   const pad = (value) => String(value).padStart(2, "0");
   const iso = (value) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
   const number = (value) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 0;
@@ -10,11 +11,11 @@
   const sum = (items, field) => items.reduce((total, item) => total + number(item[field]), 0);
 
   const validate = (ledger) => {
-    if (!ledger || !Array.isArray(ledger.records)) return "这个账本里没有可读取的记录。";
+    if (!ledger || !Array.isArray(ledger.records)) return t("importMissingRecords");
     const invalid = ledger.records.find((record) => !record || !/^\d{4}-\d{2}-\d{2}$/.test(record.date || "") || !Number.isFinite(Number(record.hours)) || Number(record.hours) < 0);
-    if (invalid) return "每条记录都要有日期，投入时间不能小于 0。";
+    if (invalid) return t("importInvalid");
     const unsupportedEstimate = ledger.records.find((record) => record.confidence === "estimated" && !String(record.estimate_basis || "").trim());
-    return unsupportedEstimate ? "标为“估算”的记录，需要补一句估算依据。" : "";
+    return unsupportedEstimate ? t("importEstimate") : "";
   };
   const read = () => {
     try {

@@ -1,5 +1,7 @@
 # AI Usage Strata
 
+[English](README.md) · [简体中文](README.zh-CN.md)
+
 Local-first visual bookkeeping for time spent working with AI.
 
 AI Usage Strata turns a small, portable activity ledger into an interactive

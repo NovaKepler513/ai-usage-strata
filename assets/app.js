@@ -2,6 +2,9 @@
   const data = window.AI_USAGE_STRATA_REPORT;
   const root = document.getElementById("report-root");
   if (!data || !root || !Array.isArray(data.timeline)) return;
+  const i18n = window.AI_USAGE_STRATA_I18N;
+  const t = i18n?.t || ((key) => key);
+  const isEnglish = i18n?.language === "en";
 
   const categoryDefinitions = Array.isArray(data.category_definitions) ? data.category_definitions : [];
   const observedModules = data.timeline.flatMap((item) => Object.keys(item.modules || {}));
@@ -31,9 +34,11 @@
   };
   const compact = (value) => {
     const number = Number(value) || 0;
-    if (number >= 100000000) return `${(number / 100000000).toFixed(1)} 亿`;
-    if (number >= 10000) return `${(number / 10000).toFixed(number >= 100000 ? 0 : 1)} 万`;
-    return Math.round(number).toLocaleString("zh-CN");
+    if (isEnglish && number >= 1000000) return `${(number / 1000000).toFixed(1)}M`;
+    if (isEnglish && number >= 1000) return `${(number / 1000).toFixed(number >= 10000 ? 0 : 1)}K`;
+    if (!isEnglish && number >= 100000000) return `${(number / 100000000).toFixed(1)} 亿`;
+    if (!isEnglish && number >= 10000) return `${(number / 10000).toFixed(number >= 100000 ? 0 : 1)} 万`;
+    return Math.round(number).toLocaleString(isEnglish ? "en-US" : "zh-CN");
   };
   const hours = (value) => `${Number(value || 0).toFixed(1)}h`;
   const percent = (value) => `${Math.round((Number(value) || 0) * 100)}%`;
@@ -81,12 +86,9 @@
 
   const metrics = {
     time: {
-      label: "和 AI 一起工作的时间",
-      short: "时间",
-      axisLabel: "小时 / 日",
-      peakLabel: "最忙",
-      dailyPhrase: "那天和 AI 一起工作的时间越长",
-      barPhrase: "和 AI 一起工作的时间越长",
+      label: t("time"), short: t("timeShort"), axisLabel: t("timeAxis"), peakLabel: isEnglish ? " was the busiest day" : "最忙",
+      dailyPhrase: isEnglish ? "more time was spent with AI that day" : "那天和 AI 一起工作的时间越长",
+      barPhrase: isEnglish ? "more time was spent with AI" : "和 AI 一起工作的时间越长",
       field: "hoursCenter",
       range: "timeRange",
       measured: "measuredHours",
@@ -95,12 +97,9 @@
       rangeFormat: (values) => `${hours(values[0])}—${hours(values[1])}`
     },
     input: {
-      label: "你发给 AI 的文字",
-      short: "输入",
-      axisLabel: "输入字数 / 日",
-      peakLabel: "输入最多",
-      dailyPhrase: "那天你发给 AI 的文字越多",
-      barPhrase: "你发给 AI 的文字越多",
+      label: t("input"), short: t("inputShort"), axisLabel: t("inputAxis"), peakLabel: isEnglish ? " had the most input" : "输入最多",
+      dailyPhrase: isEnglish ? "more text was sent to AI that day" : "那天你发给 AI 的文字越多",
+      barPhrase: isEnglish ? "more text was sent to AI" : "你发给 AI 的文字越多",
       field: "inputCenter",
       range: "inputRange",
       measured: "loggedInput",
@@ -109,12 +108,9 @@
       rangeFormat: (values) => `${compact(values[0])}—${compact(values[1])}`
     },
     output: {
-      label: "AI 返回的文字",
-      short: "输出",
-      axisLabel: "输出字数 / 日",
-      peakLabel: "的 AI 返回文字最多",
-      dailyPhrase: "那天 AI 返回的文字越多",
-      barPhrase: "AI 返回的文字越多",
+      label: t("output"), short: t("outputShort"), axisLabel: t("outputAxis"), peakLabel: isEnglish ? " had the most output" : "的 AI 返回文字最多",
+      dailyPhrase: isEnglish ? "more text was returned by AI that day" : "那天 AI 返回的文字越多",
+      barPhrase: isEnglish ? "more text was returned by AI" : "AI 返回的文字越多",
       field: "outputCenter",
       range: "outputRange",
       measured: "loggedOutput",
@@ -155,31 +151,32 @@
               <circle class="sign-node" cx="64" cy="33" r="2.4"/>
             </svg>
           </span>
-          <div class="app-wordmark"><span>LOCAL-FIRST AI TOOL</span><h1>AI Usage Strata</h1><p>你的 AI 用量与工作记录</p></div>
+          <div class="app-wordmark"><span>LOCAL-FIRST AI TOOL</span><h1>AI Usage Strata</h1><p>${t("productSubtitle")}</p></div>
         </div>
         <div class="app-actions">
-          <span class="generated-at">${escapeHtml(data.profile?.label || "本地账本")} · 只在本机保存</span>
-          <button class="ledger-action" type="button" data-ledger-action="import">导入账本</button>
-          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">导出</button>
-          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="reset">示例</button>
-          <button class="theme-switch" type="button" aria-label="切换明暗主题" aria-pressed="false"><span></span></button>
+          <span class="generated-at">${escapeHtml(data.profile?.label || "Ledger")} · ${t("localOnly")}</span>
+          <button class="ledger-action" type="button" data-ledger-action="import">${t("import")}</button>
+          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">${t("export")}</button>
+          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="reset">${t("demo")}</button>
+          <button class="ledger-action ledger-action-quiet language-switch" type="button" data-language-switch>${t("language")}</button>
+          <button class="theme-switch" type="button" aria-label="${t("switchTheme")}" aria-pressed="false"><span></span></button>
         </div>
       </header>
 
       <main>
-        <section class="command-bar" aria-label="统计范围">
+        <section class="command-bar" aria-label="${t("range")}">
           <div class="range-selectors">
-            <div class="range-labels"><span>开始月份</span><span>结束月份</span></div>
+            <div class="range-labels"><span>${t("startMonth")}</span><span>${t("endMonth")}</span></div>
             <div class="range-fields">
               <button id="range-start" type="button" data-picker="start" aria-haspopup="dialog"><b id="start-year"></b><em id="start-month"></em></button>
               <i aria-hidden="true"></i>
               <button id="range-end" type="button" data-picker="end" aria-haspopup="dialog"><b id="end-year"></b><em id="end-month"></em></button>
             </div>
           </div>
-          <div class="range-presets" aria-label="快捷范围">
-            <button type="button" data-preset="all">全部</button>
-            <button type="button" data-preset="current">本月</button>
-            <button type="button" data-preset="four-weeks">近 4 周</button>
+          <div class="range-presets" aria-label="${t("quickRange")}">
+            <button type="button" data-preset="all">${t("all")}</button>
+            <button type="button" data-preset="current">${t("currentMonth")}</button>
+            <button type="button" data-preset="four-weeks">${t("fourWeeks")}</button>
           </div>
           <p class="selection-reading" id="selection-reading"></p>
         </section>
@@ -187,33 +184,33 @@
         <section class="overview-section" aria-labelledby="metric-title">
           <header class="overview-header">
             <div class="metric-reading" aria-live="polite">
-              <p class="eyebrow">这段时间</p>
+              <p class="eyebrow">${t("period")}</p>
               <div class="metric-heading"><h2 id="metric-title"></h2><span id="metric-status" class="evidence-status"></span></div>
               <strong id="metric-total"></strong>
               <p id="metric-scope"></p>
             </div>
-            <div class="metric-switch" role="group" aria-label="选择主要指标">
-              <button type="button" data-metric="time" aria-pressed="true"><span>时间</span><b id="switch-time"></b></button>
-              <button type="button" data-metric="input" aria-pressed="false"><span>输入</span><b id="switch-input"></b></button>
-              <button type="button" data-metric="output" aria-pressed="false"><span>输出</span><b id="switch-output"></b></button>
+            <div class="metric-switch" role="group" aria-label="${t("time")}">
+              <button type="button" data-metric="time" aria-pressed="true"><span>${t("timeShort")}</span><b id="switch-time"></b></button>
+              <button type="button" data-metric="input" aria-pressed="false"><span>${t("inputShort")}</span><b id="switch-input"></b></button>
+              <button type="button" data-metric="output" aria-pressed="false"><span>${t("outputShort")}</span><b id="switch-output"></b></button>
             </div>
           </header>
-          <div class="metric-context" aria-label="数字来源">
-            <span><small>估算区间</small><b id="metric-range"></b></span>
-            <span><small>已记录</small><b id="metric-measured"></b></span>
-            <span><small>记录覆盖</small><b id="metric-coverage"></b></span>
+          <div class="metric-context" aria-label="${t("calculation")}">
+            <span><small>${t("estimateRange")}</small><b id="metric-range"></b></span>
+            <span><small>${t("recordedValue")}</small><b id="metric-measured"></b></span>
+            <span><small>${t("coverage")}</small><b id="metric-coverage"></b></span>
           </div>
         </section>
 
         <section class="hero-analysis" aria-labelledby="chart-title">
           <header class="chart-intro">
             <div class="chart-copy">
-              <p class="eyebrow">什么时候最忙</p>
+              <p class="eyebrow">${t("busiest")}</p>
               <h2><a id="chart-title" href="#"></a></h2>
               <p id="chart-subtitle"></p>
             </div>
             <div class="chart-key">
-              <span class="ridge-legend"><i aria-hidden="true"></i><span>较早</span><em>→</em><span>较近</span></span>
+              <span class="ridge-legend"><i aria-hidden="true"></i><span>${t("earlier")}</span><em>→</em><span>${t("later")}</span></span>
               <a id="chart-peak" href="#"></a>
             </div>
           </header>
@@ -223,35 +220,35 @@
         <section class="weekly-section" aria-labelledby="weekly-title">
           <header class="section-header">
             <div>
-              <p class="eyebrow">时间花在哪</p>
+              <p class="eyebrow">${t("workDirection")}</p>
               <h2 id="weekly-title"></h2>
               <p id="weekly-subtitle"></p>
             </div>
           </header>
           <div class="module-legend" id="module-legend" aria-label="工作分类"></div>
-          <div class="week-table-head" aria-hidden="true"><span id="period-label"></span><span id="week-metric-label"></span><span>投入多少，花在哪</span></div>
+          <div class="week-table-head" aria-hidden="true"><span id="period-label"></span><span id="week-metric-label"></span><span>${t("allocation")}</span></div>
           <div class="weekly-list" id="weekly-list"></div>
         </section>
 
         <details class="evidence-panel">
-          <summary><span>这些数字怎么算的</span><small id="evidence-summary"></small></summary>
+          <summary><span>${t("calculation")}</span><small id="evidence-summary"></small></summary>
           <div class="evidence-list" id="evidence-grid"></div>
           <div class="method-copy">
-            <p>估算时会参考：${escapeHtml(data.baseline.range)}。已经记下的数字不会被改动；需要估算时，账本里会留下一句说明。</p>
-            <p>这个页面不会读取你的聊天、文件或日历。它只展示你主动导入的账本；没有记下来的部分，不会被装成确定答案。</p>
+            <p>${t("estimateHint", { basis: escapeHtml(data.baseline.range) })}</p>
+            <p>${t("privacyHint")}</p>
           </div>
         </details>
         <dialog class="month-picker" id="month-picker" aria-labelledby="month-picker-title">
-          <header><div><p>选择月份</p><h2 id="month-picker-title"></h2></div><button type="button" id="month-picker-close" aria-label="关闭月份选择">×</button></header>
+          <header><div><p>${t("chooseMonth")}</p><h2 id="month-picker-title"></h2></div><button type="button" id="month-picker-close" aria-label="${t("closePicker")}">×</button></header>
           <div class="wheel-picker">
-            <section><span>年份</span><div class="wheel-list" id="picker-years" role="listbox" aria-label="年份"></div></section>
-            <section><span>月份</span><div class="wheel-list wheel-months" id="picker-months" role="listbox" aria-label="月份"></div></section>
+            <section><span>${t("year")}</span><div class="wheel-list" id="picker-years" role="listbox" aria-label="${t("year")}"></div></section>
+            <section><span>${t("month")}</span><div class="wheel-list wheel-months" id="picker-months" role="listbox" aria-label="${t("month")}"></div></section>
           </div>
-          <p>这里选月份。想看某一天，点图上的日期刻痕。</p>
+          <p>${t("pickerHint")}</p>
         </dialog>
       </main>
 
-      <footer><span>记录范围 ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}</span><span>数据只留在这台设备 · MIT © Nova Kepler</span></footer>
+      <footer><span>${t("ledgerRange")} ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}</span><span>${t("privacyFooter")}</span></footer>
     </div>`;
 
   const shell = root.querySelector(".report-shell");
@@ -263,6 +260,7 @@
       if (button.dataset.ledgerAction === "reset") window.AI_USAGE_STRATA_LEDGER?.reset();
     });
   });
+  root.querySelector("[data-language-switch]")?.addEventListener("click", () => i18n?.setLanguage(isEnglish ? "zh" : "en"));
   fileInput?.addEventListener("change", () => {
     const file = fileInput.files?.[0];
     if (file) window.AI_USAGE_STRATA_LEDGER?.importFile(file);
@@ -284,9 +282,9 @@
 
   const syncInputs = () => {
     root.querySelector("#start-year").textContent = selectionStart.getFullYear();
-    root.querySelector("#start-month").textContent = `${pad(selectionStart.getMonth() + 1)} 月`;
+    root.querySelector("#start-month").textContent = isEnglish ? `${pad(selectionStart.getMonth() + 1)}` : `${pad(selectionStart.getMonth() + 1)} 月`;
     root.querySelector("#end-year").textContent = selectionEnd.getFullYear();
-    root.querySelector("#end-month").textContent = `${pad(selectionEnd.getMonth() + 1)} 月`;
+    root.querySelector("#end-month").textContent = isEnglish ? `${pad(selectionEnd.getMonth() + 1)}` : `${pad(selectionEnd.getMonth() + 1)} 月`;
   };
 
   const setSelection = (start, end) => {
@@ -311,12 +309,12 @@
   };
   const renderPicker = () => {
     const selected = pickerTarget === "start" ? selectionStart : selectionEnd;
-    pickerTitle.textContent = pickerTarget === "start" ? "选择开始月份" : "选择结束月份";
+    pickerTitle.textContent = pickerTarget === "start" ? t("chooseStart") : t("chooseEnd");
     pickerYears.innerHTML = Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index).map((year) => `
       <button type="button" role="option" data-year="${year}" aria-selected="${year === pickerYear}">${year}</button>
     `).join("");
     pickerMonths.innerHTML = Array.from({ length: 12 }, (_, index) => index + 1).map((month) => `
-      <button type="button" role="option" data-month="${month}" ${monthAvailable(pickerYear, month) ? "" : "disabled"} aria-selected="${pickerYear === selected.getFullYear() && month === selected.getMonth() + 1}">${pad(month)} 月</button>
+      <button type="button" role="option" data-month="${month}" ${monthAvailable(pickerYear, month) ? "" : "disabled"} aria-selected="${pickerYear === selected.getFullYear() && month === selected.getMonth() + 1}">${pad(month)}${isEnglish ? "" : " 月"}</button>
     `).join("");
     requestAnimationFrame(() => {
       pickerYears.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
@@ -522,7 +520,7 @@
       };
     });
     const tickIndexes = granularity === "按月" ? [0, 7, 14, 21, 30] : [0, 1, 2, 3, 4, 5, 6];
-    const tickLabels = granularity === "按月" ? ["1", "8", "15", "22", "31"] : ["一", "二", "三", "四", "五", "六", "日"];
+    const tickLabels = granularity === "按月" ? ["1", "8", "15", "22", "31"] : (isEnglish ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["一", "二", "三", "四", "五", "六", "日"]);
     let hitPoints = [];
     let hoveredKey = "";
     let dragging = false;
@@ -904,30 +902,30 @@
     const chartTitle = root.querySelector("#chart-title");
     const chartPeak = root.querySelector("#chart-peak");
     chartTitle.textContent = peakPoint?.value
-      ? `${Number(peakPoint.date.slice(5, 7))} 月 ${Number(peakPoint.date.slice(8, 10))} 日${metric.peakLabel}`
-      : "这段时间还没有记录";
+      ? (isEnglish ? `${peakPoint.date} ${metric.peakLabel}` : `${Number(peakPoint.date.slice(5, 7))} 月 ${Number(peakPoint.date.slice(8, 10))} 日${metric.peakLabel}`)
+      : t("noRecords");
     chartTitle.href = peakPoint?.date ? evidenceHref({ date: peakPoint.date }) : "#";
     root.querySelector("#chart-subtitle").textContent = granularity === "按月"
-      ? `每层是一个月，横向看日期；山峰越高，${metric.dailyPhrase}。`
-      : `每层是一周，横向从周一排到周日；山峰越高，${metric.dailyPhrase}。`;
+      ? (isEnglish ? `Each ridge is a month. Read dates across; higher ridges mean ${metric.dailyPhrase}.` : `每层是一个月，横向看日期；山峰越高，${metric.dailyPhrase}。`)
+      : (isEnglish ? `Each ridge is a week, from Monday to Sunday; higher ridges mean ${metric.dailyPhrase}.` : `每层是一周，横向从周一排到周日；山峰越高，${metric.dailyPhrase}。`);
     chartPeak.textContent = peakPoint?.value
-      ? `当天最高 ${metric.format(peakPoint.value)}`
-      : "还没有记录";
+      ? `${t("dayPeak")} ${metric.format(peakPoint.value)}`
+      : t("noRecords");
     chartPeak.href = peakPoint?.date ? evidenceHref({ date: peakPoint.date }) : "#";
     if (!ridges.length) {
-      root.querySelector("#primary-chart").innerHTML = `<p class="empty-state">这段时间还没有记录。</p>`;
+      root.querySelector("#primary-chart").innerHTML = `<p class="empty-state">${t("noRecords")}</p>`;
       return;
     }
     root.querySelector("#primary-chart").innerHTML = `
       <div class="waterfall-model">
-        <div class="view-presets" role="group" aria-label="预制视角">
-          <button type="button" data-view="front" aria-pressed="false">前视叠合</button>
-          <button type="button" data-view="side" aria-pressed="true">侧视</button>
-          <button type="button" data-view="back" aria-pressed="false">后视叠合</button>
-          <button type="button" data-view="top" aria-pressed="false">俯视</button>
+        <div class="view-presets" role="group" aria-label="${t("busiest")}">
+          <button type="button" data-view="front" aria-pressed="false">${t("viewFront")}</button>
+          <button type="button" data-view="side" aria-pressed="true">${t("viewSide")}</button>
+          <button type="button" data-view="back" aria-pressed="false">${t("viewBack")}</button>
+          <button type="button" data-view="top" aria-pressed="false">${t("viewTop")}</button>
         </div>
         <canvas id="waterfall-canvas" role="img" aria-label="${escapeHtml(metric.label)}瀑布图。可以切换视角，也可以拖动旋转、滚轮缩放；点击山脊上的日期刻痕可查看当天记录。"></canvas>
-        <div class="model-hud"><span>把鼠标移到日期刻痕上看数值 · 点击看当天记录</span><button id="model-reset" type="button">回到侧视</button></div>
+        <div class="model-hud"><span>${t("canvasHint")}</span><button id="model-reset" type="button">${t("resetView")}</button></div>
       </div>`;
     mountWaterfallModel({ ridges, granularity, slots, metric, maximum });
   };
@@ -939,11 +937,11 @@
     const maximum = Math.max(1, ...periods.map((period) => period.summary[metric.field]));
     const selectedModules = moduleTotals(days);
     const activeModules = moduleOrder.filter((name) => selectedModules[name] > 0);
-    root.querySelector("#weekly-title").textContent = useMonths ? "按月看：投入多少，花在哪" : "按周看：投入多少，花在哪";
-    root.querySelector("#weekly-subtitle").textContent = `条带越长，${metric.barPhrase}；颜色表示主要花在哪类工作上。`;
-    root.querySelector("#period-label").textContent = useMonths ? "月份" : "周次";
+    root.querySelector("#weekly-title").textContent = useMonths ? t("monthView") : t("weekView");
+    root.querySelector("#weekly-subtitle").textContent = isEnglish ? `Longer bars mean ${metric.barPhrase}; colour shows the main work category.` : `条带越长，${metric.barPhrase}；颜色表示主要花在哪类工作上。`;
+    root.querySelector("#period-label").textContent = useMonths ? t("monthLabel") : t("weekLabel");
     root.querySelector("#module-legend").innerHTML = activeModules.map((name) => `<span><i class="${moduleTone.get(name)}"></i>${escapeHtml(name)}</span>`).join("");
-    root.querySelector("#week-metric-label").textContent = `${metric.short}投入`;
+    root.querySelector("#week-metric-label").textContent = `${metric.short} ${t("investment")}`;
     root.querySelector("#weekly-list").innerHTML = periods.length ? periods.map((period) => {
       const totalTouches = Object.values(period.modules).reduce((total, value) => total + value, 0);
       const segments = activeModules.filter((name) => period.modules[name] > 0).map((name) => {
@@ -954,23 +952,23 @@
       const leadingLabel = leading && leading[1] > 0 ? leading[0] : "没有分类";
       const magnitude = period.summary[metric.field] / maximum;
       return `<article class="week-row">
-        <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} 天有记录 · ${period.summary.commits} 次使用 · 看记录</small></a>
+        <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} ${t("recordedDays")} · ${period.summary.commits} ${t("uses")} · ${t("viewRecords")}</small></a>
         <b class="week-metric">${escapeHtml(metric.format(period.summary[metric.field]))}</b>
         <div class="week-allocation">
           <div class="week-scale"><div class="week-track" style="--magnitude:${Math.max(magnitude ? 4 : 0, magnitude * 100)}%" role="img" aria-label="${escapeHtml(period.label)} ${metric.short}${escapeHtml(metric.format(period.summary[metric.field]))}；主要花在 ${escapeHtml(leadingLabel)}">${segments || "<span class=\"week-empty\"></span>"}</div></div>
           <small>${escapeHtml(leadingLabel)}</small>
         </div>
       </article>`;
-    }).join("") : `<p class="empty-state">这段时间还没有记录。</p>`;
+    }).join("") : `<p class="empty-state">${t("noRecords")}</p>`;
   };
 
   const renderEvidence = (summary) => {
     const rows = [
-      { label: "这次留下的记录", state: "已记录", tone: "measured", detail: `${summary.commits} 次使用，分布在 ${summary.activeDays} 个有记录的日子。` },
-      { label: "已经记下的用量", state: "已记录", tone: "measured", detail: `记下 ${hours(summary.measuredHours)}；你输入 ${compact(summary.loggedInput)}，AI 返回 ${compact(summary.loggedOutput)}。` },
-      { label: "还原出来的部分", state: "估算", tone: "estimated", detail: `有用量记录的日子占 ${percent(summary.coverage)}；没有记全的部分，只给出大致范围。` }
+      { label: t("evidenceRecorded"), state: t("recorded"), tone: "measured", detail: isEnglish ? `${summary.commits} uses across ${summary.activeDays} recorded days.` : `${summary.commits} 次使用，分布在 ${summary.activeDays} 个有记录的日子。` },
+      { label: t("evidenceUsage"), state: t("recorded"), tone: "measured", detail: isEnglish ? `${hours(summary.measuredHours)} written down; input ${compact(summary.loggedInput)}, output ${compact(summary.loggedOutput)}.` : `记下 ${hours(summary.measuredHours)}；你输入 ${compact(summary.loggedInput)}，AI 返回 ${compact(summary.loggedOutput)}。` },
+      { label: t("evidenceEstimated"), state: t("estimate"), tone: "estimated", detail: isEnglish ? `${percent(summary.coverage)} of recorded days include usage; incomplete days only show a range.` : `有用量记录的日子占 ${percent(summary.coverage)}；没有记全的部分，只给出大致范围。` }
     ];
-    root.querySelector("#evidence-summary").textContent = `${percent(summary.coverage)} 的有记录日子里能找到用量`;
+    root.querySelector("#evidence-summary").textContent = isEnglish ? `${percent(summary.coverage)}${t("dateEvidence")}` : `${percent(summary.coverage)} 的有记录日子里能找到用量`;
     root.querySelector("#evidence-grid").innerHTML = rows.map((item) => `<div class="evidence-row evidence-${item.tone}"><strong>${item.label}</strong><span>${item.state}</span><p>${item.detail}</p></div>`).join("");
   };
 
@@ -995,15 +993,15 @@
     const metricMeasured = summary[metric.measured];
     const isEstimated = Math.abs(metricRange[0] - metricMeasured) > 0.001 || Math.abs(metricRange[1] - metricMeasured) > 0.001;
     shell.dataset.metric = activeMetric;
-    root.querySelector("#selection-reading").textContent = `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${days.length} 天`;
+    root.querySelector("#selection-reading").textContent = `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${days.length} ${t("days")}`;
     root.querySelector("#metric-title").textContent = metric.label;
     const metricStatus = root.querySelector("#metric-status");
-    metricStatus.textContent = isEstimated ? "估算" : "已记录";
+    metricStatus.textContent = isEstimated ? t("estimate") : t("recorded");
     metricStatus.className = `evidence-status ${isEstimated ? "evidence-estimate" : "evidence-confirmed"}`;
     root.querySelector("#metric-total").textContent = metric.format(summary[metric.field]);
-    root.querySelector("#metric-scope").textContent = `${summary.activeDays} 天有记录 · ${summary.commits} 次使用`;
+    root.querySelector("#metric-scope").textContent = `${summary.activeDays} ${t("recordedDays")} · ${summary.commits} ${t("uses")}`;
     root.querySelector("#metric-range").textContent = metric.rangeFormat(metricRange);
-    root.querySelector(".metric-context small").textContent = isEstimated ? "估算范围" : "统计值";
+    root.querySelector(".metric-context small").textContent = isEstimated ? t("estimateRange") : t("recordedValue");
     root.querySelector("#metric-measured").textContent = metric.format(summary[metric.measured]);
     root.querySelector("#metric-coverage").textContent = percent(summary.coverage);
     root.querySelector("#switch-time").textContent = hours(summary.hoursCenter);

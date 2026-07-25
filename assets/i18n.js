@@ -1,0 +1,34 @@
+(() => {
+  const STORAGE_KEY = "ai-usage-strata-language";
+  const language = localStorage.getItem(STORAGE_KEY) || (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
+  const copy = {
+    zh: {
+      productSubtitle: "你的 AI 用量与工作记录", localOnly: "只在本机保存", import: "导入账本", export: "导出", demo: "示例", switchTheme: "切换明暗主题", language: "EN",
+      range: "统计范围", startMonth: "开始月份", endMonth: "结束月份", quickRange: "快捷范围", all: "全部", currentMonth: "本月", fourWeeks: "近 4 周", period: "这段时间",
+      time: "和 AI 一起工作的时间", input: "你发给 AI 的文字", output: "AI 返回的文字", timeShort: "时间", inputShort: "输入", outputShort: "输出", timeAxis: "小时 / 日", inputAxis: "输入字数 / 日", outputAxis: "输出字数 / 日",
+      estimate: "估算", recorded: "已记录", estimateRange: "估算区间", recordedValue: "已记录", coverage: "记录覆盖", busiest: "什么时候最忙", earlier: "较早", later: "较近", workDirection: "时间花在哪", allocation: "投入多少，花在哪",
+      calculation: "这些数字怎么算的", chooseMonth: "选择月份", chooseStart: "选择开始月份", chooseEnd: "选择结束月份", year: "年份", month: "月份", closePicker: "关闭月份选择", pickerHint: "这里选月份。想看某一天，点图上的日期刻痕。",
+      recordedDays: "天有记录", uses: "次使用", viewRecords: "看记录", noRecords: "这段时间还没有记录。", monthView: "按月看：投入多少，花在哪", weekView: "按周看：投入多少，花在哪", monthLabel: "月份", weekLabel: "周次", investment: "投入",
+      evidenceRecorded: "这次留下的记录", evidenceUsage: "已经记下的用量", evidenceEstimated: "还原出来的部分", direct: "记下", dateEvidence: "的有记录日子里能找到用量", estimateHint: "估算时会参考：{basis}。已经记下的数字不会被改动；需要估算时，账本里会留下一句说明。", privacyHint: "这个页面不会读取你的聊天、文件或日历。它只展示你主动导入的账本；没有记下来的部分，不会被装成确定答案。",
+      days: "天", dayPeak: "当天最高", viewFront: "前视叠合", viewSide: "侧视", viewBack: "后视叠合", viewTop: "俯视", canvasHint: "把鼠标移到日期刻痕上看数值 · 点击看当天记录", resetView: "回到侧视", ledgerRange: "记录范围", privacyFooter: "数据只留在这台设备 · MIT © Nova Kepler",
+      evidenceBack: "← 返回时间地层", source: "这组数字从哪里来", sourceIntro: "留下了什么记录；哪些数字是直接记下的，哪些是据此补出的。", howCalculated: "这组数字怎么算", recordedAndEstimated: "记下来的，和估出来的", visibleNow: "这次看得到的", estimatedFrom: "估算时看什么", chartRead: "图表怎么读", dayView: "按天查看", daysWithRecords: "哪些日子留了记录", useRecord: "使用记录", evidence: "当天留下的线索", links: "你选择留下的本地链接", files: "外部文件", localData: "数据只留在这台设备",
+      importMissingRecords: "这个账本里没有可读取的记录。", importInvalid: "每条记录都要有日期，投入时间不能小于 0。", importEstimate: "标为“估算”的记录，需要补一句估算依据。"
+    },
+    en: {
+      productSubtitle: "Your AI usage and work record", localOnly: "Saved on this device", import: "Import ledger", export: "Export", demo: "Demo", switchTheme: "Toggle theme", language: "中文",
+      range: "Date range", startMonth: "Start month", endMonth: "End month", quickRange: "Quick range", all: "All", currentMonth: "This month", fourWeeks: "Last 4 weeks", period: "This period",
+      time: "Time working with AI", input: "Text you sent to AI", output: "Text returned by AI", timeShort: "Time", inputShort: "Input", outputShort: "Output", timeAxis: "Hours / day", inputAxis: "Input characters / day", outputAxis: "Output characters / day",
+      estimate: "Estimated", recorded: "Recorded", estimateRange: "Estimated range", recordedValue: "Recorded", coverage: "Coverage", busiest: "When work peaked", earlier: "Earlier", later: "Later", workDirection: "Where time went", allocation: "How much, and where",
+      calculation: "How these numbers were made", chooseMonth: "Choose a month", chooseStart: "Choose start month", chooseEnd: "Choose end month", year: "Year", month: "Month", closePicker: "Close month picker", pickerHint: "Choose months here. To inspect a day, select its tick on the chart.",
+      recordedDays: "recorded days", uses: "uses", viewRecords: "View records", noRecords: "There are no records in this period.", monthView: "By month: how much, and where", weekView: "By week: how much, and where", monthLabel: "Month", weekLabel: "Week", investment: "investment",
+      evidenceRecorded: "Records kept this time", evidenceUsage: "Usage written down", evidenceEstimated: "Reconstructed part", direct: "Recorded", dateEvidence: " of recorded days include usage", estimateHint: "Estimates refer to: {basis}. Numbers already written down are never changed; an estimate keeps a short reason in the ledger.", privacyHint: "This page does not read your chats, files, or calendar. It only shows the ledger you choose to import; missing data is never dressed up as a certain answer.",
+      days: "days", dayPeak: "Daily peak", viewFront: "Front overlap", viewSide: "Side", viewBack: "Back overlap", viewTop: "Top", canvasHint: "Hover a date tick for its value · select it to view that day", resetView: "Reset side view", ledgerRange: "Recorded range", privacyFooter: "Data stays on this device · MIT © Nova Kepler",
+      evidenceBack: "← Back to Time Strata", source: "Where these numbers come from", sourceIntro: "what was recorded, and what was reconstructed from it.", howCalculated: "How these numbers were made", recordedAndEstimated: "What was recorded, what was estimated", visibleNow: "What is visible here", estimatedFrom: "What estimates use", chartRead: "How to read the chart", dayView: "By day", daysWithRecords: "Days that left a record", useRecord: "Usage records", evidence: "Traces left that day", links: "Links you chose to keep", files: "External files", localData: "Data stays on this device",
+      importMissingRecords: "This ledger has no readable records.", importInvalid: "Every record needs a date, and hours cannot be below zero.", importEstimate: "An estimated record needs a short reason."
+    }
+  };
+  const t = (key, values = {}) => String(copy[language]?.[key] || copy.en[key] || key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? "");
+  const setLanguage = (next) => { localStorage.setItem(STORAGE_KEY, next); window.location.reload(); };
+  document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
+  window.AI_USAGE_STRATA_I18N = Object.freeze({ language, t, setLanguage });
+})();
