@@ -24,10 +24,6 @@
   const iso = (value) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
   const monthKey = (value) => typeof value === "string" ? value.slice(0, 7) : `${value.getFullYear()}-${pad(value.getMonth() + 1)}`;
   const monthStart = (key) => parseISO(`${key}-01`);
-  const monthEnd = (key) => {
-    const [year, month] = key.split("-").map(Number);
-    return new Date(year, month, 0);
-  };
   const addDays = (value, amount) => {
     const next = new Date(value);
     next.setDate(next.getDate() + amount);
@@ -167,11 +163,19 @@
       <main>
         <section class="command-bar" aria-label="${t("range")}">
           <div class="range-selectors">
-            <div class="range-labels"><span>${t("startMonth")}</span><span>${t("endMonth")}</span></div>
+            <div class="range-labels"><span>${t("startDate")}</span><span>${t("endDate")}</span></div>
             <div class="range-fields">
-              <button id="range-start" type="button" data-picker="start" aria-haspopup="dialog"><b id="start-year"></b><em id="start-month"></em></button>
+              <div class="date-roller" aria-label="${t("startDate")}">
+                <span><button type="button" data-date-step="start" data-date-part="year" data-date-delta="1" aria-label="${t("startDate")} year up">⌃</button><b id="start-year"></b><button type="button" data-date-step="start" data-date-part="year" data-date-delta="-1" aria-label="${t("startDate")} year down">⌄</button></span>
+                <span><button type="button" data-date-step="start" data-date-part="month" data-date-delta="1" aria-label="${t("startDate")} month up">⌃</button><b id="start-month"></b><button type="button" data-date-step="start" data-date-part="month" data-date-delta="-1" aria-label="${t("startDate")} month down">⌄</button></span>
+                <span><button type="button" data-date-step="start" data-date-part="day" data-date-delta="1" aria-label="${t("startDate")} day up">⌃</button><b id="start-day"></b><button type="button" data-date-step="start" data-date-part="day" data-date-delta="-1" aria-label="${t("startDate")} day down">⌄</button></span>
+              </div>
               <i aria-hidden="true"></i>
-              <button id="range-end" type="button" data-picker="end" aria-haspopup="dialog"><b id="end-year"></b><em id="end-month"></em></button>
+              <div class="date-roller" aria-label="${t("endDate")}">
+                <span><button type="button" data-date-step="end" data-date-part="year" data-date-delta="1" aria-label="${t("endDate")} year up">⌃</button><b id="end-year"></b><button type="button" data-date-step="end" data-date-part="year" data-date-delta="-1" aria-label="${t("endDate")} year down">⌄</button></span>
+                <span><button type="button" data-date-step="end" data-date-part="month" data-date-delta="1" aria-label="${t("endDate")} month up">⌃</button><b id="end-month"></b><button type="button" data-date-step="end" data-date-part="month" data-date-delta="-1" aria-label="${t("endDate")} month down">⌄</button></span>
+                <span><button type="button" data-date-step="end" data-date-part="day" data-date-delta="1" aria-label="${t("endDate")} day up">⌃</button><b id="end-day"></b><button type="button" data-date-step="end" data-date-part="day" data-date-delta="-1" aria-label="${t("endDate")} day down">⌄</button></span>
+              </div>
             </div>
           </div>
           <div class="range-presets" aria-label="${t("quickRange")}">
@@ -239,14 +243,6 @@
             <p>${t("privacyHint")}</p>
           </div>
         </details>
-        <dialog class="month-picker" id="month-picker" aria-labelledby="month-picker-title">
-          <header><div><p>${t("chooseMonth")}</p><h2 id="month-picker-title"></h2></div><button type="button" id="month-picker-close" aria-label="${t("closePicker")}">×</button></header>
-          <div class="wheel-picker">
-            <section><span>${t("year")}</span><div class="wheel-list" id="picker-years" role="listbox" aria-label="${t("year")}"></div></section>
-            <section><span>${t("month")}</span><div class="wheel-list wheel-months" id="picker-months" role="listbox" aria-label="${t("month")}"></div></section>
-          </div>
-          <p>${t("pickerHint")}</p>
-        </dialog>
       </main>
 
       <footer><span>${t("ledgerRange")} ${escapeHtml(data.history.start)} — ${escapeHtml(data.history.end)}</span><span>${t("privacyFooter")}</span></footer>
@@ -267,9 +263,6 @@
     if (file) window.AI_USAGE_STRATA_LEDGER?.importFile(file);
     fileInput.value = "";
   });
-  const startInput = root.querySelector("#range-start");
-  const endInput = root.querySelector("#range-end");
-  const minMonth = monthKey(historyStart);
   const maxMonth = monthKey(historyEnd);
 
   const setTheme = (theme) => {
@@ -284,86 +277,43 @@
   const syncInputs = () => {
     root.querySelector("#start-year").textContent = selectionStart.getFullYear();
     root.querySelector("#start-month").textContent = isEnglish ? `${pad(selectionStart.getMonth() + 1)}` : `${pad(selectionStart.getMonth() + 1)} 月`;
+    root.querySelector("#start-day").textContent = isEnglish ? pad(selectionStart.getDate()) : `${pad(selectionStart.getDate())} 日`;
     root.querySelector("#end-year").textContent = selectionEnd.getFullYear();
     root.querySelector("#end-month").textContent = isEnglish ? `${pad(selectionEnd.getMonth() + 1)}` : `${pad(selectionEnd.getMonth() + 1)} 月`;
+    root.querySelector("#end-day").textContent = isEnglish ? pad(selectionEnd.getDate()) : `${pad(selectionEnd.getDate())} 日`;
   };
 
   const setSelection = (start, end) => {
-    selectionStart = start < historyStart ? new Date(historyStart) : start;
-    selectionEnd = end > historyEnd ? new Date(historyEnd) : end;
+    selectionStart = start < historyStart ? new Date(historyStart) : (start > historyEnd ? new Date(historyEnd) : start);
+    selectionEnd = end < historyStart ? new Date(historyStart) : (end > historyEnd ? new Date(historyEnd) : end);
     if (selectionStart > selectionEnd) selectionEnd = new Date(selectionStart);
     syncInputs();
     render();
   };
 
-  const monthPicker = root.querySelector("#month-picker");
-  const pickerTitle = root.querySelector("#month-picker-title");
-  const pickerYears = root.querySelector("#picker-years");
-  const pickerMonths = root.querySelector("#picker-months");
-  const minYear = historyStart.getFullYear();
-  const maxYear = historyEnd.getFullYear();
-  let pickerTarget = "start";
-  let pickerYear = selectionStart.getFullYear();
-  const monthAvailable = (year, month) => {
-    const key = `${year}-${pad(month)}`;
-    return key >= minMonth && key <= maxMonth;
-  };
-  const renderPicker = () => {
-    const selected = pickerTarget === "start" ? selectionStart : selectionEnd;
-    pickerTitle.textContent = pickerTarget === "start" ? t("chooseStart") : t("chooseEnd");
-    pickerYears.innerHTML = Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index).map((year) => `
-      <button type="button" role="option" data-year="${year}" aria-selected="${year === pickerYear}">${year}</button>
-    `).join("");
-    pickerMonths.innerHTML = Array.from({ length: 12 }, (_, index) => index + 1).map((month) => `
-      <button type="button" role="option" data-month="${month}" ${monthAvailable(pickerYear, month) ? "" : "disabled"} aria-selected="${pickerYear === selected.getFullYear() && month === selected.getMonth() + 1}">${pad(month)}${isEnglish ? "" : " 月"}</button>
-    `).join("");
-    requestAnimationFrame(() => {
-      pickerYears.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
-      pickerMonths.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
-    });
-  };
-  const openPicker = (target) => {
-    pickerTarget = target;
-    pickerYear = (target === "start" ? selectionStart : selectionEnd).getFullYear();
-    renderPicker();
-    if (typeof monthPicker.showModal === "function") monthPicker.showModal();
-    else monthPicker.setAttribute("open", "");
-  };
-  const closePicker = () => {
-    if (typeof monthPicker.close === "function") monthPicker.close();
-    else monthPicker.removeAttribute("open");
-  };
-  const selectMonth = (year, month) => {
-    const key = `${year}-${pad(month)}`;
-    if (!monthAvailable(year, month)) return;
-    if (pickerTarget === "start") {
-      const start = monthStart(key);
-      const end = selectionEnd < start ? (monthEnd(key) > historyEnd ? new Date(historyEnd) : monthEnd(key)) : selectionEnd;
-      setSelection(start, end);
-    } else {
-      const end = monthEnd(key) > historyEnd ? new Date(historyEnd) : monthEnd(key);
-      const start = selectionStart > end ? monthStart(key) : selectionStart;
-      setSelection(start, end);
+  const stepDate = (target, part, delta) => {
+    const next = new Date(target === "start" ? selectionStart : selectionEnd);
+    if (part === "year" || part === "month") {
+      const day = next.getDate();
+      next.setDate(1);
+      if (part === "year") next.setFullYear(next.getFullYear() + delta);
+      if (part === "month") next.setMonth(next.getMonth() + delta);
+      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      next.setDate(Math.min(day, lastDay));
     }
-    closePicker();
+    if (part === "day") next.setDate(next.getDate() + delta);
+    setSelection(target === "start" ? next : selectionStart, target === "end" ? next : selectionEnd);
   };
-  pickerYears.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-year]");
-    if (!button) return;
-    pickerYear = Number(button.dataset.year);
-    renderPicker();
+  root.querySelectorAll("[data-date-step]").forEach((button) => {
+    button.addEventListener("click", () => stepDate(button.dataset.dateStep, button.dataset.datePart, Number(button.dataset.dateDelta)));
   });
-  pickerMonths.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-month]");
-    if (!button || button.disabled) return;
-    selectMonth(pickerYear, Number(button.dataset.month));
+  root.querySelectorAll(".date-roller span").forEach((roller) => {
+    roller.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const button = roller.querySelector("[data-date-step]");
+      stepDate(button.dataset.dateStep, button.dataset.datePart, event.deltaY < 0 ? 1 : -1);
+    }, { passive: false });
   });
-  root.querySelector("#month-picker-close").addEventListener("click", closePicker);
-  monthPicker.addEventListener("click", (event) => {
-    if (event.target === monthPicker) closePicker();
-  });
-  startInput.addEventListener("click", () => openPicker("start"));
-  endInput.addEventListener("click", () => openPicker("end"));
 
   const weeklyGroups = (days) => [...groupDays(days, (item) => {
     const day = parseISO(item.date);

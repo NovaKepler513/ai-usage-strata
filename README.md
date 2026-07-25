@@ -15,7 +15,7 @@ for people who want the useful question — “what did I actually put into this
 
 - The same time-strata reading structure throughout: overview, 3D waterfall
   ridges, preset views, date marks, weekly allocation, and evidence.
-- Month and all-history views, plus point-level evidence inspection.
+- Direct start/end date rollers, all-history views, and point-level evidence inspection.
 - Automatic category expansion: new categories appear without changing code.
 - Import, export, and reset controls. Imported data stays in the browser.
 - A compact JSON format and a validator for keeping the ledger readable.
