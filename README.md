@@ -1,116 +1,110 @@
 # AI Usage Strata
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[简体中文](README.zh-CN.md) · [Live demo](https://novakepler513.github.io/ai-usage-strata/) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md)
 
-Local-first visual bookkeeping for time spent working with AI.
+> A local-first visual ledger for the time, text, and work you do with AI.
 
-AI Usage Strata turns a small, portable activity ledger into an interactive
-view of time, input, output, confidence, and work direction. It is designed
-for people who want the useful question — “what did I actually put into this?”
-— without handing their work record to another dashboard.
+![AI Usage Strata overview: an interactive time-strata dashboard with a 3D ridge view](assets/readme/overview.png)
 
-中文：这是一个完全在本机浏览器运行的 AI 协作用量账本。导入自己的 JSON 后，可以看时间强度、每周投入、工作分类和当天证据；数据不会上传。
+## One question, made visible
 
-## What is included
+AI can make a week feel busy without making its shape legible. You may remember that you used it a lot, but not when work gathered momentum, where it went, or what a peak day was connected to.
 
-- The same time-strata reading structure throughout: overview, 3D waterfall
-  ridges, preset views, date marks, weekly allocation, and evidence.
-- Direct start/end date rollers, all-history views, and point-level evidence inspection.
-- An optional saved reference period, alongside All, This month, and Last 4 weeks.
-- Clickable category filters that show each selected category's estimated share of the chosen period.
-- Automatic category expansion: new categories appear without changing code.
-- Import, export, and reset controls. Imported data stays in the browser.
-- A compact JSON format and a validator for keeping the ledger readable.
-- A release audit that rejects common private paths, local URLs, secret-like
-  strings, accidental local data, and release clutter.
+AI Usage Strata turns a small ledger that you choose to keep into a visual record you can inspect. It is not a surveillance dashboard, a payroll tracker, or a cloud account. It is a private instrument for looking back at your work with enough evidence to trust the story it tells.
 
-## What is deliberately not included
+![A small ledger becomes a readable record, entirely in the local browser](assets/readme/local-flow.svg)
 
-- Any real person’s activity, chat content, filesystem path, Git history, or
-  generated report.
-- Any cloud sync, telemetry, account system, or hidden network request.
-- A claim that estimated hours are factual. Estimates must be labelled and
-  carry an `estimate_basis` field in the ledger.
+## What it helps you do
 
-## Start in 30 seconds
+| If you want to ask… | You can look at… | Then act on… |
+| --- | --- | --- |
+| When did work intensify? | A rotatable waterfall of smooth monthly ridges | A peak day, its date, and its evidence |
+| Where did the time go? | Filterable weekly or monthly allocation strips | The work directions that dominated a period |
+| How much did I exchange with AI? | Time, input, and output views for the same dates | A comparable baseline for a sprint, month, or project |
+| Which numbers can I rely on? | Recorded values beside explicit estimate ranges | A conclusion that does not hide uncertainty |
+| What happened on that day? | A day-level evidence page | The note, draft, log, or link you chose to retain |
 
-1. Download or clone this repository.
-2. On macOS, double-click `启动·AI Usage Strata.command`. It starts a local-only
-   server at `127.0.0.1:8770` and opens the app. On other systems, serve this
-   folder with any static-file server, then open `index.html`.
-3. Use the sample data first, then choose “导入账本” to select your own JSON
-   file.
-4. Click a point on the ridgeline to inspect that day’s evidence.
+## Who it is for
 
-Your imported ledger is held in browser storage for that browser profile. Use
-“Export current ledger” for a portable backup; use “Return to demo” to remove
-the imported copy from this app.
+| You might be… | This is useful when… |
+| --- | --- |
+| An independent researcher, writer, designer, or developer | Your AI work is spread across tools and you want one honest retrospective view. |
+| A small team lead or project owner | You want to review a project’s rhythm without asking people to hand over chat logs. |
+| A personal knowledge-system builder | You already keep lightweight activity records and want to see their longer-term pattern. |
+| Someone testing AI-assisted work habits | You want a private before/after record instead of a vague feeling that “AI changed everything.” |
 
-## Ledger format
+It is deliberately not for employee surveillance, hidden analytics, automated chat scraping, or turning estimates into performance scores.
 
-The complete field guide is in [docs/ledger-format.md](docs/ledger-format.md).
-At minimum, each record needs a date and a number of hours:
+## See the whole shape, then trace one day
+
+<p align="center">
+  <img alt="Evidence page showing recorded values, estimated ranges, and the retained trace for a selected day" src="assets/readme/evidence.png" width="760">
+</p>
+
+Each ridge represents a month. Read dates across the ridge; height represents the chosen daily measure. Switch between Time, Input, and Output. Use front, side, back, or top views to inspect the same record from different angles.
+
+Every date mark that has evidence can lead to its day page. There, the tool keeps a plain distinction:
+
+| Mark | Meaning |
+| --- | --- |
+| Recorded | A value you explicitly put in the ledger. |
+| Estimated | A reconstruction with its reason kept alongside it. |
+
+The tool will never quietly fill a blank day and present it as a fact.
+
+## Try it in three minutes
+
+1. Open the [live fictional demo](https://novakepler513.github.io/ai-usage-strata/), or clone this repository.
+2. Explore the demo: rotate the waterfall, choose a category, change Time to Input or Output, and open a date mark.
+3. Import a copy of [`examples/minimal-ledger.json`](examples/minimal-ledger.json).
+4. Replace the fictional rows with your own records. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
+5. Export your ledger for a portable backup whenever you want.
+
+On macOS, double-click `启动·AI Usage Strata.command`. It starts a local-only server at `127.0.0.1:8770` and opens the app. On other systems, serve this folder with any static-file server and open `index.html`.
+
+## The ledger is intentionally small
+
+You do not need to export a complete chat history. One row can be one day, one session, or one event — as long as you use your own convention consistently.
 
 ```json
 {
-  "schema_version": "1.0",
-  "profile": { "label": "My workspace" },
-  "records": [
-    {
-      "date": "2026-07-24",
-      "hours": 2.5,
-      "category": "Research",
-      "confidence": "recorded",
-      "activity_count": 3,
-      "evidence": [{ "type": "note", "label": "Daily working note" }]
-    }
-  ]
+  "date": "2026-07-24",
+  "hours": 2.5,
+  "input_chars": 4800,
+  "output_chars": 12600,
+  "activity_count": 3,
+  "category": "Research",
+  "confidence": "recorded",
+  "evidence": [{ "type": "note", "label": "Daily research note" }]
 }
 ```
 
-Validate before importing:
+If you reconstruct a day, use `"confidence": "estimated"` and add a short `estimate_basis`. The full field guide, including the saved reference period, is in [docs/ledger-format.md](docs/ledger-format.md).
+
+## Local-first means a concrete boundary
+
+| The app does | The app does not do |
+| --- | --- |
+| Read the JSON file you deliberately select | Scan your chats, files, calendar, repository, or browser |
+| Keep the imported copy in that browser’s local storage | Upload, sync, track, or analyse your data remotely |
+| Let you export or reset the copy | Create an account or make hidden network requests |
+
+Before sharing a ledger or screenshot, remove labels and links that could identify a client, collaborator, local path, or raw chat content. Read the full [privacy and safe-use notes](docs/privacy.md).
+
+## Contribute or adapt it
+
+This project is MIT-licensed and designed to be extended without weakening its privacy boundary. Useful contributions include accessibility improvements, translations, import adapters, example ledgers, visual refinements, and documentation.
+
+- [How to contribute](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Report a bug or propose a feature](https://github.com/NovaKepler513/ai-usage-strata/issues)
+- [Release safety checklist](docs/release-checklist.md)
+
+Before opening a public pull request, run:
 
 ```bash
-python3 scripts/validate_ledger.py path/to/my-ledger.json
-```
-
-[`examples/minimal-ledger.json`](examples/minimal-ledger.json) is a small,
-valid file you can import or adapt.
-
-## Privacy model
-
-The app has no server-side component and makes no network request. The JSON
-you choose is parsed in the browser, then kept in that browser’s local storage
-until you export or reset it. Read the limits and safe-use rules in
-[docs/privacy.md](docs/privacy.md).
-
-## Release safety
-
-Before making a fork or a release public, run:
-
-```bash
+python3 scripts/validate_ledger.py examples/minimal-ledger.json
 python3 scripts/release_audit.py
 ```
 
-Add your own identifying terms only on your machine:
-
-```bash
-python3 scripts/release_audit.py --term "my-private-project" --terms-file private-terms.txt
-```
-
-The terms file should stay outside this repository. More detail is in
-[docs/release-checklist.md](docs/release-checklist.md).
-
-## License and author
-
-MIT © 2026 Nova Kepler. See [LICENSE](LICENSE).
-
-The included demo ledger is fictional and may be reused with the code.
-
-## Contributing
-
-Contributions are welcome: bug fixes, accessibility improvements, translations,
-import adapters, example ledgers, and better documentation all count. Start
-with [CONTRIBUTING.md](CONTRIBUTING.md), check the [security policy](SECURITY.md),
-and open an issue before a large change so the local-first privacy boundary
-stays intact.
+MIT © 2026 Nova Kepler. The included Atlas Lab ledger and every screenshot in this README are fictional.
