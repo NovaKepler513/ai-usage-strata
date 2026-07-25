@@ -28,7 +28,12 @@
     }
   };
   const t = (key, values = {}) => String(copy[language]?.[key] || copy.en[key] || key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? "");
+  const categories = {
+    zh: { Research: "研究", Product: "产品", Writing: "写作", Operations: "运营", Other: "其他", Others: "其他", "Client work & delivery": "客户项目与交付", "Product, brand & IP": "产品、品牌与 IP", "Personal digital practice": "个人数字实践", "Knowledge systems & governance": "知识系统与治理", "Organisation, business & strategy": "组织、业务与战略" },
+    en: { "研究": "Research", "产品": "Product", "写作": "Writing", "运营": "Operations", "其他": "Other", "客户项目与交付": "Client work & delivery", "产品、品牌与IP": "Product, brand & IP", "产品、品牌与 IP": "Product, brand & IP", "个人数字实践": "Personal digital practice", "知识系统与治理": "Knowledge systems & governance", "组织、业务与战略": "Organisation, business & strategy" }
+  };
+  const category = (name) => categories[language]?.[name] || name;
   const setLanguage = (next) => { localStorage.setItem(STORAGE_KEY, next); window.location.reload(); };
   document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
-  window.AI_USAGE_STRATA_I18N = Object.freeze({ language, t, setLanguage });
+  window.AI_USAGE_STRATA_I18N = Object.freeze({ language, t, category, setLanguage });
 })();

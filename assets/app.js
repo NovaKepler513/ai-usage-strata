@@ -4,6 +4,7 @@
   if (!data || !root || !Array.isArray(data.timeline)) return;
   const i18n = window.AI_USAGE_STRATA_I18N;
   const t = i18n?.t || ((key) => key);
+  const category = i18n?.category || ((name) => name);
   const isEnglish = i18n?.language === "en";
 
   const categoryDefinitions = Array.isArray(data.category_definitions) ? data.category_definitions : [];
@@ -225,7 +226,7 @@
               <p id="weekly-subtitle"></p>
             </div>
           </header>
-          <div class="module-legend" id="module-legend" aria-label="工作分类"></div>
+          <div class="module-legend" id="module-legend" aria-label="${isEnglish ? "Work categories" : "工作分类"}"></div>
           <div class="week-table-head" aria-hidden="true"><span id="period-label"></span><span id="week-metric-label"></span><span>${t("allocation")}</span></div>
           <div class="weekly-list" id="weekly-list"></div>
         </section>
@@ -940,16 +941,16 @@
     root.querySelector("#weekly-title").textContent = useMonths ? t("monthView") : t("weekView");
     root.querySelector("#weekly-subtitle").textContent = isEnglish ? `Longer bars mean ${metric.barPhrase}; colour shows the main work category.` : `条带越长，${metric.barPhrase}；颜色表示主要花在哪类工作上。`;
     root.querySelector("#period-label").textContent = useMonths ? t("monthLabel") : t("weekLabel");
-    root.querySelector("#module-legend").innerHTML = activeModules.map((name) => `<span><i class="${moduleTone.get(name)}"></i>${escapeHtml(name)}</span>`).join("");
+    root.querySelector("#module-legend").innerHTML = activeModules.map((name) => `<span><i class="${moduleTone.get(name)}"></i>${escapeHtml(category(name))}</span>`).join("");
     root.querySelector("#week-metric-label").textContent = `${metric.short} ${t("investment")}`;
     root.querySelector("#weekly-list").innerHTML = periods.length ? periods.map((period) => {
       const totalTouches = Object.values(period.modules).reduce((total, value) => total + value, 0);
       const segments = activeModules.filter((name) => period.modules[name] > 0).map((name) => {
         const share = totalTouches ? period.modules[name] / totalTouches : 0;
-        return `<span class="week-segment ${moduleTone.get(name)}" style="--share:${share * 100}" aria-label="${escapeHtml(name)} ${percent(share)}"></span>`;
+        return `<span class="week-segment ${moduleTone.get(name)}" style="--share:${share * 100}" aria-label="${escapeHtml(category(name))} ${percent(share)}"></span>`;
       }).join("");
       const leading = Object.entries(period.modules).sort((a, b) => b[1] - a[1])[0];
-      const leadingLabel = leading && leading[1] > 0 ? leading[0] : "没有分类";
+      const leadingLabel = leading && leading[1] > 0 ? category(leading[0]) : (isEnglish ? "Uncategorised" : "没有分类");
       const magnitude = period.summary[metric.field] / maximum;
       return `<article class="week-row">
         <a class="week-label" href="${evidenceHref({ start: period.start, end: period.end })}"><strong>${escapeHtml(useMonths ? period.label : formatWeek(period.start, period.end))}</strong><small>${period.summary.activeDays} ${t("recordedDays")} · ${period.summary.commits} ${t("uses")} · ${t("viewRecords")}</small></a>
