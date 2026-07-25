@@ -1,8 +1,26 @@
 # Ledger format
 
-AI Usage Strata accepts one JSON object with a `records` array. The format is
-intentionally small: it works for manually kept notes, exports from other
-tools, or a script you write yourself.
+AI Usage Strata saves and exports one JSON object with a `records` array. You
+do not need to write it by hand: the page can create it from its direct-entry
+form or from a CSV/TSV table. JSON is the portable format for backup, sharing a
+template, and advanced editing.
+
+## Bring a normal table first
+
+Save a spreadsheet as CSV or TSV, then choose **Import ledger / table**. The
+converter recognises these common headers (Chinese and English can be mixed):
+
+| Table column | Saved field |
+| --- | --- |
+| `日期`, `date`, `day` | `date` |
+| `小时`, `hours`, `duration`, or `分钟`, `minutes` | `hours` |
+| `分类`, `category` | `category` |
+| `输入`, `input`; `输出`, `output`; `次数`, `count` | optional usage fields |
+| `备注`, `note`, `说明` | a short evidence note |
+
+Every converted row needs a valid calendar date plus hours or minutes. Rows
+that do not meet that minimum are not silently invented; if no valid row can
+be read, the import explains what is missing.
 
 ```json
 {

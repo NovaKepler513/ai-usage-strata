@@ -2,7 +2,7 @@
 
 ## What the app does
 
-- Reads the JSON file you deliberately choose in the browser.
+- Reads only the records you enter directly, or the JSON/CSV/TSV file you deliberately choose in the browser.
 - Stores that imported copy in the current browser’s local storage.
 - Lets you download that same copy, clear it back to an empty ledger, or load the separate fictional example only when you ask to see it.
 

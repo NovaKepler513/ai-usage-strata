@@ -56,15 +56,25 @@ The tool will never quietly fill a blank day and present it as a fact.
 
 1. Open the [live app](https://novakepler513.github.io/ai-usage-strata/). It starts with no data, by design.
 2. Choose “View example” to explore a fictional Atlas Lab case: rotate the waterfall, choose a category, change Time to Input or Output, and open a date mark.
-3. Import a copy of [`examples/minimal-ledger.json`](examples/minimal-ledger.json).
-4. Replace the fictional rows with your own records. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
-5. Export your ledger for a portable backup whenever you want.
+3. Choose “Start entering” and add a date plus hours; that is enough for a first record.
+4. Or import an existing table: [`examples/table-ledger-example.csv`](examples/table-ledger-example.csv) shows the accepted CSV shape. CSV and TSV headers such as `date`, `hours`, `category`, `input`, `output`, and `count` are mapped automatically.
+5. JSON is optional: [`examples/minimal-ledger.json`](examples/minimal-ledger.json) is the portable backup and advanced-editing format. Add a `reference_window` if there is a sprint, audit, or reporting period you revisit often.
+6. Export your ledger for a portable backup whenever you want.
 
 On macOS, double-click `启动·AI Usage Strata.command`. It starts a local-only server at `127.0.0.1:8770` and opens the app. On other systems, serve this folder with any static-file server and open `index.html`.
 
-## The ledger is intentionally small
+## Start with your notes, not with code
 
-You do not need to export a complete chat history. One row can be one day, one session, or one event — as long as you use your own convention consistently.
+You do not need to export a complete chat history or write JSON. The in-page ledger builder asks first for only a date and hours. If you already keep notes in a spreadsheet, save it as CSV/TSV and import it. The app converts common columns into its portable ledger format locally.
+
+| Spreadsheet header | Mapped ledger field |
+| --- | --- |
+| `日期` / `date` | date |
+| `小时` / `hours`, or `分钟` / `minutes` | hours |
+| `分类` / `category` | category |
+| `输入` / `input`, `输出` / `output`, `次数` / `count` | optional usage fields |
+
+JSON is the small, portable format the app saves and exports. One row can be one day, one session, or one event — as long as you use your own convention consistently.
 
 ```json
 {
@@ -85,7 +95,7 @@ If you reconstruct a day, use `"confidence": "estimated"` and add a short `estim
 
 | The app does | The app does not do |
 | --- | --- |
-| Read the JSON file you deliberately select | Scan your chats, files, calendar, repository, or browser |
+| Read the form entry or JSON/CSV/TSV file you deliberately select | Scan your chats, files, calendar, repository, or browser |
 | Keep the imported copy in that browser’s local storage | Upload, sync, track, or analyse your data remotely |
 | Let you export or reset the copy | Create an account or make hidden network requests |
 

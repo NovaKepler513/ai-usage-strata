@@ -146,15 +146,16 @@
   };
   const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
   const ledgerActions = isEmptyLedger ? `
-    <button class="ledger-action" type="button" data-ledger-action="import">${t("import")}</button>
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
+    <button class="ledger-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("import")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="demo">${t("viewDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : isDemo ? `
-    <button class="ledger-action" type="button" data-ledger-action="import">${t("importOwn")}</button>
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
+    <button class="ledger-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("importOwn")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("exitDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : `
-    <button class="ledger-action" type="button" data-ledger-action="import">${t("replaceLedger")}</button>
+    <button class="ledger-action" type="button" data-ledger-action="builder">${t("enterLedger")}</button>
+    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("replaceLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">${t("downloadCurrent")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("clearLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>`;
@@ -182,6 +183,7 @@
       </header>
 
       <main>
+        <p class="ledger-transition" id="ledger-transition" role="status" aria-live="polite" hidden></p>
         <section class="command-bar ${hasRecords ? "" : "command-bar-empty"}" aria-label="${t("range")}">
           ${hasRecords ? `
           <div class="range-selectors">
@@ -281,31 +283,125 @@
             <li><strong>${t("guideStepThree")}</strong><span>${t("guideStepThreeCopy")}</span></li>
           </ol>
           <p class="guide-export">${t("guideExport")}</p>
+          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
           <button class="ledger-action" type="button" data-guide-close>${t("guideClose")}</button>
+        </div>
+      </dialog>
+      <dialog class="ledger-builder" id="ledger-builder">
+        <div>
+          <p class="eyebrow">${t("startLedger")}</p>
+          <h2>${t("builderTitle")}</h2>
+          <p>${t("builderCopy")}</p>
+          <label class="builder-name"><span>${t("builderName")}</span><input id="builder-name" type="text" value="${escapeHtml(t("defaultLedgerName"))}" maxlength="80"></label>
+          <div class="builder-rows" id="builder-rows"></div>
+          <p class="builder-table-hint">${t("tableHint")}</p>
+          <div class="builder-actions">
+            <button class="ledger-action ledger-action-quiet" type="button" data-builder-add>${t("addRecord")}</button>
+            <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("importTable")}</button>
+            <button class="ledger-action ledger-action-quiet" type="button" data-builder-cancel>${t("builderCancel")}</button>
+            <button class="ledger-action" type="button" data-builder-save>${t("saveLedger")}</button>
+          </div>
         </div>
       </dialog>
     </div>`;
 
   const shell = root.querySelector(".report-shell");
   const fileInput = document.getElementById("ledger-file");
-  const runLedgerAction = (action) => {
+  const transition = root.querySelector("#ledger-transition");
+  const showTransition = (copy, control) => {
+    if (transition) {
+      transition.hidden = false;
+      transition.textContent = copy;
+    }
+    if (control) {
+      control.disabled = true;
+      control.textContent = copy;
+    }
+  };
+  const deferLedgerAction = (copy, control, callback) => {
+    showTransition(copy, control);
+    window.setTimeout(callback, 320);
+  };
+  const builder = root.querySelector("#ledger-builder");
+  const builderRows = root.querySelector("#builder-rows");
+  const defaultBuilderDate = iso(new Date());
+  const addBuilderRow = (values = {}) => {
+    if (!builderRows) return;
+    const row = document.createElement("article");
+    row.className = "builder-row";
+    row.innerHTML = `
+      <label><span>${t("builderDate")}</span><input data-builder-field="date" type="date" value="${escapeHtml(values.date || defaultBuilderDate)}"></label>
+      <label><span>${t("builderHours")}</span><input data-builder-field="hours" type="number" min="0" step="0.1" inputmode="decimal" placeholder="2.5" value="${escapeHtml(values.hours || "")}"></label>
+      <label><span>${t("builderCategory")}</span><input data-builder-field="category" type="text" maxlength="60" value="${escapeHtml(values.category || "")}"></label>
+      <label><span>${t("builderInput")}</span><input data-builder-field="input_chars" type="number" min="0" step="1" inputmode="numeric" value="${escapeHtml(values.input_chars || "")}"></label>
+      <label><span>${t("builderOutput")}</span><input data-builder-field="output_chars" type="number" min="0" step="1" inputmode="numeric" value="${escapeHtml(values.output_chars || "")}"></label>
+      <label class="builder-note"><span>${t("builderNote")}</span><input data-builder-field="note" type="text" maxlength="160" value="${escapeHtml(values.note || "")}"></label>
+      <button class="builder-remove" type="button" data-builder-remove aria-label="${t("removeRecord")}">×</button>`;
+    builderRows.append(row);
+    row.querySelector("[data-builder-remove]")?.addEventListener("click", () => {
+      if (builderRows.children.length > 1) row.remove();
+      else row.querySelectorAll("input").forEach((input) => { if (input.type !== "date") input.value = ""; });
+    });
+  };
+  const collectBuilderLedger = () => {
+    const records = [...(builderRows?.querySelectorAll(".builder-row") || [])].map((row) => {
+      const value = (field) => row.querySelector(`[data-builder-field="${field}"]`)?.value.trim() || "";
+      const hoursValue = value("hours");
+      if (!value("date") || !hoursValue) return null;
+      const note = value("note");
+      return {
+        date: value("date"),
+        hours: Number(hoursValue),
+        category: value("category") || "其他",
+        input_chars: Number(value("input_chars")) || 0,
+        output_chars: Number(value("output_chars")) || 0,
+        activity_count: 1,
+        confidence: "recorded",
+        evidence: note ? [{ type: "note", label: note }] : []
+      };
+    }).filter(Boolean);
+    return { schema_version: "1.0", profile: { label: root.querySelector("#builder-name")?.value.trim() || t("defaultLedgerName"), updated_at: new Date().toISOString() }, records };
+  };
+  const openBuilder = () => {
+    if (!builder) return;
+    if (!builderRows?.children.length) addBuilderRow();
+    builder.showModal();
+  };
+  const runLedgerAction = (action, control) => {
+    if (action === "builder") openBuilder();
     if (action === "import") fileInput?.click();
     if (action === "export") window.AI_USAGE_STRATA_LEDGER?.exportFile();
     if (action === "template") window.AI_USAGE_STRATA_LEDGER?.downloadTemplate();
-    if (action === "demo") window.AI_USAGE_STRATA_LEDGER?.loadDemo();
-    if (action === "clear") window.AI_USAGE_STRATA_LEDGER?.clear();
+    if (action === "demo") deferLedgerAction(t("loadingDemo"), control, () => window.AI_USAGE_STRATA_LEDGER?.loadDemo());
+    if (action === "clear") deferLedgerAction(isDemo ? t("leavingDemo") : t("loadingLedger"), control, () => window.AI_USAGE_STRATA_LEDGER?.clear());
     if (action === "guide") root.querySelector("#ledger-guide")?.showModal();
   };
   root.querySelectorAll("[data-ledger-action]").forEach((button) => {
     button.addEventListener("click", () => {
-      runLedgerAction(button.dataset.ledgerAction);
+      runLedgerAction(button.dataset.ledgerAction, button);
     });
   });
   root.querySelector("[data-guide-close]")?.addEventListener("click", () => root.querySelector("#ledger-guide")?.close());
+  root.querySelector("[data-builder-add]")?.addEventListener("click", () => addBuilderRow());
+  root.querySelector("[data-builder-cancel]")?.addEventListener("click", () => builder?.close());
+  root.querySelector("[data-builder-save]")?.addEventListener("click", () => {
+    const ledger = collectBuilderLedger();
+    if (!ledger.records.length) {
+      window.alert(t("importTableInvalid"));
+      return;
+    }
+    showTransition(t("loadingLedger"));
+    window.setTimeout(() => window.AI_USAGE_STRATA_LEDGER?.saveLedger(ledger), 120);
+  });
   root.querySelector("[data-language-switch]")?.addEventListener("click", () => i18n?.setLanguage(isEnglish ? "zh" : "en"));
   fileInput?.addEventListener("change", () => {
     const file = fileInput.files?.[0];
-    if (file) window.AI_USAGE_STRATA_LEDGER?.importFile(file);
+    if (file) {
+      showTransition(t("loadingLedger"));
+      const isTable = /\.(csv|tsv)$/i.test(file.name) || /text\/(csv|tab-separated-values)/i.test(file.type);
+      if (isTable) window.AI_USAGE_STRATA_LEDGER?.importTableFile(file);
+      else window.AI_USAGE_STRATA_LEDGER?.importFile(file);
+    }
     fileInput.value = "";
   });
   const setTheme = (theme) => {
@@ -896,8 +992,8 @@
       root.querySelector("#chart-title").removeAttribute("href");
       root.querySelector("#chart-subtitle").textContent = t("emptyChartCopy");
       root.querySelector("#chart-peak").textContent = "";
-      root.querySelector("#primary-chart").innerHTML = `<div class="empty-ledger-card"><span class="strata-sign" aria-hidden="true"><svg viewBox="0 0 82 52"><path class="sign-plane sign-plane-back" d="M2 42C13 38 17 28 27 29C37 30 40 39 50 34C61 29 65 15 80 11L80 48H2Z"/><path class="sign-plane sign-plane-mid" d="M2 45C14 42 20 35 30 36C41 38 46 27 57 25C67 24 73 31 80 28L80 48H2Z"/><path class="sign-line sign-line-front" d="M2 46C15 44 22 40 34 41C47 43 53 35 64 33C72 32 77 36 80 35"/></svg></span><div><strong>${t("emptyChartTitle")}</strong><p>${t("emptyChartCopy")}</p></div><div class="empty-ledger-actions"><button class="ledger-action" type="button" data-empty-action="import">${t("import")}</button><button class="ledger-action ledger-action-quiet" type="button" data-empty-action="template">${t("downloadTemplate")}</button><button class="ledger-action ledger-action-quiet" type="button" data-empty-action="demo">${t("viewDemo")}</button></div></div>`;
-      root.querySelectorAll("[data-empty-action]").forEach((button) => button.addEventListener("click", () => runLedgerAction(button.dataset.emptyAction)));
+      root.querySelector("#primary-chart").innerHTML = `<div class="empty-ledger-card"><span class="strata-sign" aria-hidden="true"><svg viewBox="0 0 82 52"><path class="sign-plane sign-plane-back" d="M2 42C13 38 17 28 27 29C37 30 40 39 50 34C61 29 65 15 80 11L80 48H2Z"/><path class="sign-plane sign-plane-mid" d="M2 45C14 42 20 35 30 36C41 38 46 27 57 25C67 24 73 31 80 28L80 48H2Z"/><path class="sign-line sign-line-front" d="M2 46C15 44 22 40 34 41C47 43 53 35 64 33C72 32 77 36 80 35"/></svg></span><div><strong>${t("emptyChartTitle")}</strong><p>${t("emptyChartCopy")}</p></div><div class="empty-ledger-actions"><button class="ledger-action" type="button" data-empty-action="builder">${t("startLedger")}</button><button class="ledger-action ledger-action-quiet" type="button" data-empty-action="import">${t("import")}</button><button class="ledger-action ledger-action-quiet" type="button" data-empty-action="demo">${t("viewDemo")}</button></div></div>`;
+      root.querySelectorAll("[data-empty-action]").forEach((button) => button.addEventListener("click", () => runLedgerAction(button.dataset.emptyAction, button)));
       return;
     }
     const { granularity, slots, items } = chartGroups(days);

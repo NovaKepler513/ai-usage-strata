@@ -38,6 +38,84 @@
       localStorage.setItem(SOURCE_KEY, source);
     } catch (_) {}
   };
+  const save = (next, source = "imported") => {
+    const message = validate(next);
+    if (message) throw new Error(message);
+    write(next, source);
+    window.location.reload();
+  };
+  const normaliseDate = (value) => {
+    const source = String(value || "").trim();
+    const match = source.match(/^(\d{4})[-./年]\s*(\d{1,2})[-./月]\s*(\d{1,2})日?$/);
+    if (!match) return "";
+    const [, year, month, day] = match;
+    const candidate = `${year}-${pad(month)}-${pad(day)}`;
+    const date = new Date(`${candidate}T12:00:00`);
+    return !Number.isNaN(date.getTime()) && iso(date) === candidate ? candidate : "";
+  };
+  const parseNumeric = (value) => {
+    const cleaned = String(value ?? "").replace(/[，,\s]/g, "").replace(/[^\d.+-]/g, "");
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  };
+  const parseDelimited = (text) => {
+    const lines = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n").filter((line) => line.trim());
+    if (lines.length < 2) return [];
+    const delimiter = lines[0].includes("\t") ? "\t" : ",";
+    const readLine = (line) => {
+      const values = [];
+      let current = "";
+      let quoted = false;
+      for (let index = 0; index < line.length; index += 1) {
+        const char = line[index];
+        if (char === '"' && line[index + 1] === '"' && quoted) { current += '"'; index += 1; continue; }
+        if (char === '"') { quoted = !quoted; continue; }
+        if (char === delimiter && !quoted) { values.push(current.trim()); current = ""; continue; }
+        current += char;
+      }
+      values.push(current.trim());
+      return values;
+    };
+    const headers = readLine(lines[0]).map((header) => String(header).trim().toLowerCase().replace(/[\s_\-（）()]/g, ""));
+    return lines.slice(1).map((line) => Object.fromEntries(headers.map((header, index) => [header, readLine(line)[index] || ""])));
+  };
+  const tableValue = (row, aliases) => aliases.map((key) => row[key]).find((value) => String(value ?? "").trim() !== "") || "";
+  const ledgerFromTable = (text, label) => {
+    const rows = parseDelimited(text);
+    const aliases = {
+      date: ["date", "日期", "day", "日期时间", "时间"],
+      hours: ["hours", "hour", "小时", "时长", "时数", "duration", "投入时间"],
+      minutes: ["minutes", "minute", "分钟", "min"],
+      category: ["category", "分类", "类型", "工作分类", "direction"],
+      input: ["input", "inputchars", "输入", "输入字数", "prompt", "promptchars"],
+      output: ["output", "outputchars", "输出", "输出字数", "response", "responsechars"],
+      count: ["count", "activitycount", "次数", "使用次数", "会话数", "sessions", "prompts"],
+      note: ["note", "备注", "说明", "当天说明", "evidence", "记录"]
+    };
+    const records = rows.map((row) => {
+      const date = normaliseDate(tableValue(row, aliases.date));
+      const hourValue = tableValue(row, aliases.hours);
+      const hours = String(hourValue).trim() ? parseNumeric(hourValue) : parseNumeric(tableValue(row, aliases.minutes)) / 60;
+      const note = String(tableValue(row, aliases.note)).trim();
+      if (!date || !Number.isFinite(hours)) return null;
+      return {
+        date,
+        hours,
+        category: String(tableValue(row, aliases.category)).trim() || "其他",
+        input_chars: parseNumeric(tableValue(row, aliases.input)),
+        output_chars: parseNumeric(tableValue(row, aliases.output)),
+        activity_count: parseNumeric(tableValue(row, aliases.count)) || 1,
+        confidence: "recorded",
+        evidence: note ? [{ type: "note", label: note }] : []
+      };
+    }).filter(Boolean);
+    if (!records.length) throw new Error(t("importTableInvalid"));
+    return {
+      schema_version: "1.0",
+      profile: { label: String(label || "").replace(/\.[^.]+$/, "") || t("importedLedger"), updated_at: new Date().toISOString() },
+      records
+    };
+  };
   const remove = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -148,13 +226,22 @@
       reader.onload = () => {
         try {
           const next = JSON.parse(String(reader.result));
-          const message = validate(next);
-          if (message) throw new Error(message);
-          write(next, "imported");
-          window.location.reload();
+          save(next);
         } catch (error) { window.alert(`无法导入这个账本：${error.message}`); }
       };
       reader.readAsText(file);
+    },
+    importTableFile(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { save(ledgerFromTable(String(reader.result), file.name)); }
+        catch (error) { window.alert(`${t("importTableError")}：${error.message}`); }
+      };
+      reader.readAsText(file);
+    },
+    saveLedger(next) {
+      try { save(next); }
+      catch (error) { window.alert(`${t("saveLedgerError")}：${error.message}`); }
     },
     exportFile() {
       const blob = new Blob([JSON.stringify(ledger, null, 2)], { type: "application/json" });
