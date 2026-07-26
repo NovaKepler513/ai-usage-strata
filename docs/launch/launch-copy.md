@@ -1,14 +1,17 @@
-# AI Usage Strata launch copy
+# AI Usage Strata v1.0.0 launch copy
 
 Links:
 
 - Live app: https://novakepler513.github.io/ai-usage-strata/
 - Source: https://github.com/NovaKepler513/ai-usage-strata
+- Stable release: https://github.com/NovaKepler513/ai-usage-strata/releases/tag/v1.0.0
 - MIT License: https://github.com/NovaKepler513/ai-usage-strata/blob/main/LICENSE
 
 ## Main post
 
 I built and open-sourced AI Usage Strata — a local-first visual ledger for the work you choose to keep about working with AI.
+
+Version 1.0.0 completes the path from first entry, table or JSON import, and review-first AI preparation to date peaks, work categories, and day-level evidence.
 
 It turns a small personal ledger into a readable record of time, input, output, work categories, and retained day-level evidence. It starts empty by design: no account, no analytics, no upload, and no chat-history scraping. You decide what to record and what to keep in your browser.
 

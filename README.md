@@ -1,10 +1,19 @@
 # AI Usage Strata
 
-[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [How to use AI to prepare a ledger](docs/ai-assisted-import.md) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md) · [Launch kit](docs/launch/README.md) · [MIT License](LICENSE)
+[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [Stable v1.0.0](https://github.com/NovaKepler513/ai-usage-strata/releases/tag/v1.0.0) · [How to use AI to prepare a ledger](docs/ai-assisted-import.md) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md) · [Launch kit](docs/launch/README.md) · [MIT License](LICENSE)
 
 > A local-first visual ledger for the time, text, and work you do with AI.
 
 ![AI Usage Strata overview: an interactive time-strata dashboard with a 3D ridge view](assets/readme/overview.png)
+
+## v1.0.0 stable release
+
+- Starts at zero; data appears only after you enter it, import it, or deliberately open the fictional example.
+- Supports manual entry, CSV/TSV/JSON, and a review-first route through your own Codex, Claude Code, or another AI.
+- Date wheels apply on click, cover 1900–2100 by default, and extend for imported out-of-range records. Invalid start/end combinations produce a visible page-level warning.
+- Chinese and English, light and dark themes, category filters, day evidence, and the rotatable waterfall now form one complete path.
+
+This is the frozen stable baseline. Further improvements continue through GitHub Issues and pull requests, without bringing real ledgers into the public repository.
 
 ## One question, made visible
 

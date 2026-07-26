@@ -1,10 +1,19 @@
 # AI Usage Strata
 
-[English](README.md) · [在线体验](https://novakepler513.github.io/ai-usage-strata/) · [让 AI 整理账本](docs/ai-assisted-import.zh-CN.md) · [账本格式](docs/ledger-format.md) · [参与贡献](CONTRIBUTING.md) · [发布素材](docs/launch/README.zh-CN.md) · [MIT 许可证](LICENSE)
+[English](README.md) · [在线体验](https://novakepler513.github.io/ai-usage-strata/) · [稳定版 v1.0.0](https://github.com/NovaKepler513/ai-usage-strata/releases/tag/v1.0.0) · [让 AI 整理账本](docs/ai-assisted-import.zh-CN.md) · [账本格式](docs/ledger-format.md) · [参与贡献](CONTRIBUTING.md) · [发布素材](docs/launch/README.zh-CN.md) · [MIT 许可证](LICENSE)
 
 > 一个本机优先的可视化账本：把你和 AI 一起工作的时间、文字量与去向，变成一段可回看的记录。
 
 ![AI Usage Strata 总览：带有三维瀑布山脊图的交互式时间账本](assets/readme/overview.png)
+
+## v1.0.0 稳定版
+
+- 默认从 0 开始；只有主动填写、导入或打开虚构示例后才会出现数据。
+- 支持手填、CSV／TSV／JSON，以及让自己的 Codex、Claude Code 或其他 AI 先整理再导入。
+- 日期滚轮可直接点选，默认覆盖 1900—2100 年；导入更早或更晚的记录时会继续扩展。无效起止日期会在页面上方明确提醒。
+- 中英文、明暗主题、分类筛选、日期证据页和可旋转的瀑布山脊图已经组成完整使用链路。
+
+这是当前冻结的稳定基线。后续改进通过 GitHub Issue 和 Pull Request 继续，不会把真实账本带进公开仓库。
 
 ## 它想回答的，其实只有一个问题
 
