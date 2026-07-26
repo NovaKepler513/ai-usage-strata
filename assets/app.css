@@ -362,11 +362,18 @@ main { padding-top: 24px; }
 .copyright-trigger:hover { color: var(--ink-2); opacity: 1; }
 .butterfly-seal { width: 15px; height: 15px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: currentColor; background: transparent; }
 .butterfly-seal i { display: block; width: 10px; height: 10px; background: currentColor; -webkit-mask: url("identity/handdrawn-butterfly-v2.png") center / contain no-repeat; mask: url("identity/handdrawn-butterfly-v2.png") center / contain no-repeat; }
-.copyright-dialog { width: min(320px, calc(100vw - 32px)); padding: 0; border: 0; background: transparent; color: var(--ink); }
+.copyright-dialog { width: min(360px, calc(100vw - 32px)); padding: 0; border: 0; background: transparent; color: var(--ink); }
 .copyright-dialog::backdrop { background: color-mix(in srgb, var(--ink) 38%, transparent); backdrop-filter: blur(5px); }
 .copyright-sheet { position: relative; padding: 26px; border: 1px solid color-mix(in srgb, var(--cool-strong) 24%, var(--line)); border-radius: 16px; background: var(--paper); box-shadow: var(--shadow); }
 .copyright-sheet h2 { margin: 0; font-size: 20px; font-weight: 560; letter-spacing: -0.03em; }
 .copyright-sheet > p { margin: 10px 0 0; color: var(--ink-2); font-family: var(--mono); font-size: 10px; line-height: 1.6; }
+.copyright-sheet .copyright-credit { color: var(--ink); }
+.copyright-sheet .copyright-note { margin-top: 7px; }
+.copyright-links { display: grid; gap: 7px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.copyright-links a { width: fit-content; color: var(--cool-strong); font-size: 11px; line-height: 1.45; text-decoration: none; }
+.copyright-links a::after { content: " ↗"; color: var(--ink-3); }
+.copyright-links a[href="LICENSE"]::after { content: " ↓"; }
+.copyright-links a:hover { color: var(--warm-strong); }
 .dialog-close { position: absolute; top: 14px; right: 15px; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: var(--ink-3); font-size: 22px; line-height: 1; cursor: pointer; }
 .dialog-close:hover { color: var(--ink); }
 

@@ -1,6 +1,6 @@
 # AI Usage Strata
 
-[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [How to use AI to prepare a ledger](docs/ai-assisted-import.md) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md)
+[简体中文](README.zh-CN.md) · [Live app](https://novakepler513.github.io/ai-usage-strata/) · [How to use AI to prepare a ledger](docs/ai-assisted-import.md) · [Ledger format](docs/ledger-format.md) · [Contribute](CONTRIBUTING.md) · [Launch kit](docs/launch/README.md) · [MIT License](LICENSE)
 
 > A local-first visual ledger for the time, text, and work you do with AI.
 
@@ -144,6 +144,18 @@ This project is MIT-licensed and designed to be extended without weakening its p
 - [Report a bug or propose a feature](https://github.com/NovaKepler513/ai-usage-strata/issues)
 - [Release safety checklist](docs/release-checklist.md)
 
+## Project and licence
+
+AI Usage Strata is made by Nova Kepler at Tianyu Vision. The source, releases,
+issues, and contribution history live at
+[github.com/NovaKepler513/ai-usage-strata](https://github.com/NovaKepler513/ai-usage-strata).
+
+The code is available under the [MIT License](LICENSE). If the tool gives you
+an idea, finds a rough edge, or needs to support a better import path, please
+[open an issue](https://github.com/NovaKepler513/ai-usage-strata/issues) or
+send a focused pull request. Keep all real ledgers and identifiable evidence
+out of public issues and branches.
+
 Before opening a public pull request, run:
 
 ```bash
@@ -151,4 +163,4 @@ python3 scripts/validate_ledger.py examples/minimal-ledger.json
 python3 scripts/release_audit.py
 ```
 
-Code: MIT © 2026 Nova Kepler. The included Atlas Lab ledger and every screenshot in this README are fictional. The hand-drawn butterfly authorship mark has its own [asset notice](ASSET-LICENSE.md).
+Code: MIT © 2026 Nova Kepler · Tianyu Vision. The included Atlas Lab ledger and every screenshot in this README are fictional.

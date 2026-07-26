@@ -147,9 +147,23 @@
   const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
   const aiSpark = `<span class="ai-spark" aria-hidden="true"><svg viewBox="0 0 18 18"><path class="ai-spark-main" d="M9 1.8c.7 4.2 2.1 5.6 6.3 6.3-4.2.7-5.6 2.1-6.3 6.3-.7-4.2-2.1-5.6-6.3-6.3 4.2-.7 5.6-2.1 6.3-6.3Z"/><path class="ai-spark-small" d="M14.5 11.3c.25 1.5.75 2 2.25 2.25-1.5.25-2 .75-2.25 2.25-.25-1.5-.75-2-2.25-2.25 1.5-.25 2-.75 2.25-2.25Z"/></svg></span>`;
   const copyrightUi = isEnglish ? {
-    trigger: "Open copyright notice", title: "Copyright", close: "Close"
+    trigger: "Open copyright notice",
+    title: "Copyright & open source",
+    close: "Close",
+    credit: "© 2026 Nova Kepler · Tianyu Vision",
+    source: "View the project on GitHub",
+    license: "Download the MIT License",
+    contribute: "Share an idea or contribute on GitHub",
+    note: "The app is local-first. Your ledger stays in the browser you choose."
   } : {
-    trigger: "打开版权说明", title: "版权说明", close: "关闭"
+    trigger: "打开版权说明",
+    title: "版权与开源",
+    close: "关闭",
+    credit: "© 2026 Nova Kepler · 天与视界",
+    source: "在 GitHub 查看项目源码",
+    license: "下载 MIT 开源许可证",
+    contribute: "欢迎在 GitHub 提建议或参与贡献",
+    note: "这是一个本机优先的工具；账本只保留在你选择的浏览器里。"
   };
   const primaryActions = isEmptyLedger ? `
     <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
@@ -290,7 +304,13 @@
         <div class="copyright-sheet">
           <button class="dialog-close" type="button" data-copyright-close aria-label="${copyrightUi.close}" title="${copyrightUi.close}">×</button>
           <h2 id="copyright-title">${copyrightUi.title}</h2>
-          <p>${t("copyright")}</p>
+          <p class="copyright-credit">${copyrightUi.credit}</p>
+          <p class="copyright-note">${copyrightUi.note}</p>
+          <nav class="copyright-links" aria-label="${copyrightUi.title}">
+            <a href="LICENSE" download>${copyrightUi.license}</a>
+            <a href="https://github.com/NovaKepler513/ai-usage-strata" target="_blank" rel="noreferrer">${copyrightUi.source}</a>
+            <a href="https://github.com/NovaKepler513/ai-usage-strata/issues" target="_blank" rel="noreferrer">${copyrightUi.contribute}</a>
+          </nav>
         </div>
       </dialog>
       <dialog class="ledger-guide" id="ledger-guide">

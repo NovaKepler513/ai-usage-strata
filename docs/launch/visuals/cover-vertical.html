@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Usage Strata social cover</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #f8f4ea; color: #182330; font-family: "PingFang SC", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif; }
+    .cover { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #f8f4ea url("ridge-portrait-background.png") center / cover no-repeat; }
+    .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(251,248,241,.9) 0%, rgba(251,248,241,.57) 37%, rgba(251,248,241,.05) 69%); }
+    .line { position: absolute; z-index: 2; top: 6.2%; left: 9%; width: 82%; height: 2px; background: linear-gradient(90deg, #477fac 0%, #cbdce8 42%, #f5c0ab 68%, #c74b56 100%); }
+    .copy { position: absolute; z-index: 3; top: 15%; left: 10%; right: 10%; }
+    .eyebrow { margin: 0 0 26px; color: #4679a8; font-size: 19px; font-weight: 700; letter-spacing: .15em; }
+    h1 { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: clamp(56px, 7.2vw, 92px); font-weight: 500; letter-spacing: -.06em; line-height: 1.02; }
+    .sub { margin: 30px 0 0; color: #52606c; font-size: clamp(20px, 2vw, 27px); line-height: 1.55; }
+    .url { position: absolute; z-index: 3; left: 10%; right: 10%; bottom: 11%; color: #3d6079; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; letter-spacing: .02em; }
+    .brand { position: absolute; z-index: 3; left: 10%; right: 10%; bottom: 6%; color: #63717d; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .brand b { margin-right: 8px; color: #2c3c49; font-size: 14px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="cover">
+    <div class="line"></div>
+    <section class="copy">
+      <p class="eyebrow">AI USAGE STRATA</p>
+      <h1>你和 AI<br>一起工作的<br>时间，去了哪里？</h1>
+      <p class="sub">本机保存、自己选择记录、可以回看证据的 AI 用量账本。</p>
+    </section>
+    <p class="url">novakepler513.github.io/ai-usage-strata</p>
+    <p class="brand"><b>© Nova Kepler</b> 天与视界</p>
+  </main>
+</body>
+</html>
