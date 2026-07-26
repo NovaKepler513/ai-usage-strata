@@ -148,9 +148,13 @@ main { padding-top: 24px; }
 .date-roller > span { min-width: 0; display: grid; align-items: stretch; text-align: center; border-right: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
 .date-roller > span:last-child { border-right: 0; }
 .date-roller .date-value { width: 100%; height: 100%; padding: 0; border: 0; background: transparent; color: var(--ink); font-family: var(--mono); font-size: 11px; font-weight: 500; white-space: nowrap; cursor: pointer; }
-.date-roller .date-value:hover, .date-roller .date-value[aria-expanded="true"] { background: color-mix(in srgb, var(--cool) 12%, var(--paper-strong)); color: var(--active); }
+.date-roller .date-value:hover, .date-roller .date-value[aria-expanded="true"] { background: color-mix(in srgb, var(--neutral) 48%, var(--paper-strong)); color: var(--ink); }
+.date-roller .date-value:focus-visible { outline: 1px solid color-mix(in srgb, var(--ink-3) 52%, transparent); outline-offset: -3px; }
 .date-control.is-open .date-roller { visibility: hidden; }
-.date-wheel-panel { position: absolute; z-index: 30; top: 0; left: 0; width: 100%; overflow: hidden; border: 1px solid color-mix(in srgb, var(--cool-strong) 22%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--paper-strong) 97%, transparent); box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 12%, transparent); backdrop-filter: blur(16px); }
+.date-wheel-panel { position: absolute; z-index: 30; top: -52px; left: 0; width: 100%; overflow: hidden; border: 1px solid color-mix(in srgb, var(--ink-3) 22%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--paper-strong) 98%, transparent); box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 12%, transparent); backdrop-filter: blur(16px); }
+.date-wheel-panel::before, .date-wheel-panel::after { position: absolute; z-index: 2; right: 0; left: 0; height: 1px; background: color-mix(in srgb, var(--ink-3) 24%, var(--line)); content: ""; pointer-events: none; }
+.date-wheel-panel::before { top: 59px; }
+.date-wheel-panel::after { top: 94px; }
 .date-wheel-panel[hidden] { display: none; }
 .date-wheel-columns { display: grid; grid-template-columns: repeat(3, 1fr); }
 .date-wheel-column { min-width: 0; border-right: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
@@ -159,11 +163,11 @@ main { padding-top: 24px; }
 .date-wheel-list::-webkit-scrollbar { display: none; }
 .date-wheel-list::before, .date-wheel-list::after { display: block; height: 60px; content: ""; }
 .date-wheel-list button { width: 100%; height: 34px; padding: 0 4px; border: 0; background: transparent; color: var(--ink-3); font-family: var(--mono); font-size: 10px; scroll-snap-align: center; cursor: pointer; }
-.date-wheel-list button:hover { color: var(--active); }
-.date-wheel-list button[aria-selected="true"] { border-top: 1px solid color-mix(in srgb, var(--cool-strong) 28%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--warm-strong) 20%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--cool) 10%, transparent), color-mix(in srgb, var(--peach) 11%, transparent)); color: var(--ink); font-weight: 650; }
+.date-wheel-list button:hover { background: color-mix(in srgb, var(--neutral) 42%, transparent); color: var(--ink); }
+.date-wheel-list button[aria-selected="true"] { background: transparent; color: var(--ink); font-weight: 650; }
 .date-range-alert { width: max-content; max-width: 350px; margin: 0 0 -2px 3px; padding: 6px 9px; border: 1px solid color-mix(in srgb, var(--warm-strong) 30%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--peach) 18%, var(--paper-strong)); color: var(--warm-strong); font-size: 9px; line-height: 1.4; }
 .date-range-alert[hidden] { display: none; }
-.date-control.is-invalid .date-roller { border-color: color-mix(in srgb, var(--warm-strong) 58%, var(--line)); animation: date-nudge 220ms ease-out; }
+.date-control.is-invalid .date-roller, .date-control.is-invalid .date-wheel-panel { border-color: color-mix(in srgb, var(--warm-strong) 58%, var(--line)); animation: date-nudge 220ms ease-out; }
 @keyframes date-nudge { 35% { transform: translateX(3px); } 70% { transform: translateX(-2px); } }
 .range-fields i { width: 12px; height: 1px; background: var(--line); }
 .range-presets { display: flex; gap: 2px; padding: 0 0 4px 8px; border-left: 1px solid var(--line); }

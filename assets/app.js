@@ -33,6 +33,7 @@
     next.setDate(next.getDate() + amount);
     return next;
   };
+  const calendarDaysInclusive = (start, end) => Math.round((Date.UTC(end.getFullYear(), end.getMonth(), end.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000) + 1;
   const compact = (value) => {
     const number = Number(value) || 0;
     if (isEnglish && number >= 1000000) return `${(number / 1000000).toFixed(1)}M`;
@@ -56,6 +57,10 @@
 
   const historyStart = parseISO(data.history?.start || data.range.start);
   const historyEnd = parseISO(data.history?.end || data.range.end);
+  const pickerMinYear = Math.min(1900, historyStart.getFullYear() - 20);
+  const pickerMaxYear = Math.max(2100, historyEnd.getFullYear() + 20);
+  const pickerStart = new Date(pickerMinYear, 0, 1);
+  const pickerEnd = new Date(pickerMaxYear, 11, 31);
   const maxMonth = monthKey(historyEnd);
   const referenceWindow = data.reference_window?.start && data.reference_window?.end
     ? { start: parseISO(data.reference_window.start), end: parseISO(data.reference_window.end), label: data.reference_window.label || "" }
@@ -745,7 +750,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     requestAnimationFrame(() => control?.classList.add("is-invalid"));
   };
 
-  const boundDate = (value) => value < historyStart ? new Date(historyStart) : (value > historyEnd ? new Date(historyEnd) : value);
+  const boundDate = (value) => value < pickerStart ? new Date(pickerStart) : (value > pickerEnd ? new Date(pickerEnd) : value);
 
   const setSelection = (start, end, target = "") => {
     const nextStart = boundDate(start);
@@ -769,15 +774,9 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     const value = dateFor(target);
     const year = value.getFullYear();
     const month = value.getMonth() + 1;
-    if (part === "year") return range(historyStart.getFullYear(), historyEnd.getFullYear());
-    if (part === "month") {
-      const first = year === historyStart.getFullYear() ? historyStart.getMonth() + 1 : 1;
-      const last = year === historyEnd.getFullYear() ? historyEnd.getMonth() + 1 : 12;
-      return range(first, last);
-    }
-    const first = year === historyStart.getFullYear() && month === historyStart.getMonth() + 1 ? historyStart.getDate() : 1;
-    const last = year === historyEnd.getFullYear() && month === historyEnd.getMonth() + 1 ? historyEnd.getDate() : daysInMonth(year, month);
-    return range(first, last);
+    if (part === "year") return range(pickerMinYear, pickerMaxYear);
+    if (part === "month") return range(1, 12);
+    return range(1, daysInMonth(year, month));
   };
   const selectedPart = (date, part) => part === "year" ? date.getFullYear() : (part === "month" ? date.getMonth() + 1 : date.getDate());
   const wheelLabel = (part, value) => part === "year" ? String(value) : (isEnglish ? pad(value) : `${pad(value)} ${part === "month" ? "月" : "日"}`);
@@ -1541,7 +1540,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     const isEstimated = hasRecords && (Math.abs(metricRange[0] - metricMeasured) > 0.001 || Math.abs(metricRange[1] - metricMeasured) > 0.001);
     shell.dataset.metric = activeMetric;
     const selectionReading = root.querySelector("#selection-reading");
-    if (selectionReading) selectionReading.textContent = hasRecords ? `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${days.length} ${t("days")}` : t("noDateRange");
+    if (selectionReading) selectionReading.textContent = hasRecords ? `${formatDay(selectionStart)} — ${formatDay(selectionEnd)} · ${calendarDaysInclusive(selectionStart, selectionEnd)} ${t("days")}` : t("noDateRange");
     root.querySelector("#metric-title").textContent = hasRecords ? metric.label : t("noData");
     const metricStatus = root.querySelector("#metric-status");
     metricStatus.textContent = hasRecords ? (isEstimated ? t("estimate") : t("recorded")) : t("noData");
