@@ -830,6 +830,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     if (option) {
       const list = option.closest("[data-date-wheel]");
       chooseDatePart(list.dataset.dateWheel, list.dataset.datePart, Number(option.dataset.dateOption));
+      closeDateWheels();
       return;
     }
     if (!event.target.closest(".date-control")) closeDateWheels();
@@ -853,7 +854,10 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
       const distance = Math.abs(rect.top + rect.height / 2 - center);
       return !best || distance < best.distance ? { option, distance } : best;
     }, null)?.option;
-    if (nearest) chooseDatePart(list.dataset.dateWheel, list.dataset.datePart, Number(nearest.dataset.dateOption));
+    if (nearest) {
+      chooseDatePart(list.dataset.dateWheel, list.dataset.datePart, Number(nearest.dataset.dateOption));
+      closeDateWheels();
+    }
   }, { passive: true });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeDateWheels();
