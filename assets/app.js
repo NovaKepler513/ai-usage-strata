@@ -189,14 +189,11 @@
     <div class="date-control" data-date-control="${target}">
       <div class="date-roller" aria-label="${label}">
         ${["year", "month", "day"].map((part) => `<span>
-          <button type="button" data-date-step="${target}" data-date-part="${part}" data-date-delta="1" aria-label="${label} ${part} up">⌃</button>
           <button class="date-value" id="${target}-${part}" type="button" data-date-open="${target}" aria-expanded="false" aria-controls="${target}-date-wheel"></button>
-          <button type="button" data-date-step="${target}" data-date-part="${part}" data-date-delta="-1" aria-label="${label} ${part} down">⌄</button>
         </span>`).join("")}
       </div>
       <div class="date-wheel-panel" id="${target}-date-wheel" data-date-wheel-panel="${target}" hidden>
         <div class="date-wheel-columns"></div>
-        <p>${t("dateWheelHint")}</p>
       </div>
     </div>`;
 
@@ -765,30 +762,6 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     return true;
   };
 
-  const stepDate = (target, part, delta) => {
-    const next = new Date(target === "start" ? selectionStart : selectionEnd);
-    if (part === "year" || part === "month") {
-      const day = next.getDate();
-      next.setDate(1);
-      if (part === "year") next.setFullYear(next.getFullYear() + delta);
-      if (part === "month") next.setMonth(next.getMonth() + delta);
-      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-      next.setDate(Math.min(day, lastDay));
-    }
-    if (part === "day") next.setDate(next.getDate() + delta);
-    setSelection(target === "start" ? next : selectionStart, target === "end" ? next : selectionEnd, target);
-  };
-  root.querySelectorAll("[data-date-step]").forEach((button) => {
-    button.addEventListener("click", () => stepDate(button.dataset.dateStep, button.dataset.datePart, Number(button.dataset.dateDelta)));
-  });
-  root.querySelectorAll(".date-roller span").forEach((roller) => {
-    roller.addEventListener("wheel", (event) => {
-      event.preventDefault();
-      const button = roller.querySelector("[data-date-step]");
-      stepDate(button.dataset.dateStep, button.dataset.datePart, event.deltaY < 0 ? 1 : -1);
-    }, { passive: false });
-  });
-
   const dateFor = (target) => target === "start" ? selectionStart : selectionEnd;
   const daysInMonth = (year, month) => new Date(year, month, 0).getDate();
   const range = (start, end) => Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
@@ -814,7 +787,6 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     const date = dateFor(target);
     panel.querySelector(".date-wheel-columns").innerHTML = ["year", "month", "day"].map((part) => `
       <section class="date-wheel-column">
-        <span>${t(part === "year" ? "dateYear" : (part === "month" ? "dateMonth" : "dateDay"))}</span>
         <div class="date-wheel-list" role="listbox" aria-label="${t(part === "year" ? "dateYear" : (part === "month" ? "dateMonth" : "dateDay"))}" data-date-wheel="${target}" data-date-part="${part}" tabindex="0">
           ${wheelValues(target, part).map((value) => `<button type="button" role="option" data-date-option="${value}" aria-selected="${value === selectedPart(date, part)}">${wheelLabel(part, value)}</button>`).join("")}
         </div>
@@ -837,6 +809,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     root.querySelectorAll("[data-date-wheel-panel]").forEach((panel) => {
       if (panel.dataset.dateWheelPanel === except) return;
       panel.hidden = true;
+      root.querySelector(`[data-date-control="${panel.dataset.dateWheelPanel}"]`)?.classList.remove("is-open");
       root.querySelectorAll(`[data-date-open="${panel.dataset.dateWheelPanel}"]`).forEach((button) => button.setAttribute("aria-expanded", "false"));
     });
   };
@@ -848,6 +821,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
       const willOpen = panel.hidden;
       closeDateWheels(willOpen ? target : "");
       panel.hidden = !willOpen;
+      root.querySelector(`[data-date-control="${target}"]`)?.classList.toggle("is-open", willOpen);
       root.querySelectorAll(`[data-date-open="${target}"]`).forEach((item) => item.setAttribute("aria-expanded", String(willOpen)));
       if (willOpen) renderDateWheel(target);
     });
