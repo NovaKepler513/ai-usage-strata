@@ -22,6 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate public release
+        run: |
+          python3 scripts/release_audit.py
+          python3 scripts/validate_ledger.py examples/ledger-template.json
+          python3 scripts/validate_ledger.py examples/minimal-ledger.json
+          node --check assets/i18n.js
+          node --check assets/public-adapter.js
+          node --check assets/estimator.js
+          node --check assets/app.js
+          node --check assets/evidence.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

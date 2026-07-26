@@ -262,8 +262,11 @@
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = "my-ai-usage-ledger.json";
+      anchor.hidden = true;
+      document.body.append(anchor);
       anchor.click();
-      URL.revokeObjectURL(url);
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
     downloadTemplate() {
       const blob = new Blob([JSON.stringify(emptyLedger, null, 2)], { type: "application/json" });
@@ -271,8 +274,11 @@
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = "ai-usage-ledger-template.json";
+      anchor.hidden = true;
+      document.body.append(anchor);
       anchor.click();
-      URL.revokeObjectURL(url);
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
     loadDemo() { write(clone(demoLedger), "demo"); window.location.reload(); },
     clear() { remove(); window.location.reload(); }

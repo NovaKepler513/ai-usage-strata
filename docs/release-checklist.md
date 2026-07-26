@@ -4,7 +4,7 @@ Run this checklist before a public push, tag, ZIP, or screenshot pack.
 
 1. Work in a fresh repository with no private project history.
 2. Confirm the sample ledger is fictional and no user export is staged.
-3. Run the structural audit:
+3. Run the disclosure and local-link audit:
 
    ```bash
    python3 scripts/release_audit.py
@@ -18,12 +18,13 @@ Run this checklist before a public push, tag, ZIP, or screenshot pack.
 6. Check that the commit identity is a deliberate public identity, not an
    automatic global Git setting.
 7. Start the local launcher, verify the empty first-run state, direct entry with a date and hours only, CSV/TSV conversion, template download, JSON import, current-ledger download, the visible loading copy when loading and leaving the fictional example, and the Reference period shortcut if the ledger contains one.
-8. Check both 中文 and English in the language switch. New visible interface
+8. Verify that clearing a real ledger asks for confirmation, and that evidence without a safe `http` or `https` URL stays readable but is not rendered as a link.
+9. Check both 中文 and English in the language switch. New visible interface
    copy belongs in `assets/i18n.js`; do not add one-language-only controls or
    explanatory text.
-9. After publication, clone the remote repository into a new folder and repeat
+10. After publication, clone the remote repository into a new folder and repeat
    the audit there. A local draft is not proof of what was published.
-10. If GitHub Pages is enabled, inspect the deployed URL in both languages and
+11. If GitHub Pages is enabled, inspect the deployed URL in both languages and
     confirm that importing a ledger still stays in that browser only.
 
 Before the first public push, confirm which GitHub account or organisation will

@@ -432,7 +432,7 @@ main { padding-top: 24px; }
 .evidence-section h2 { margin: 0; font-size: 22px; font-weight: 550; letter-spacing: -0.03em; }
 .evidence-section header > span { color: var(--ink-3); font-family: var(--mono); font-size: 10px; }
 .evidence-links, .file-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px 24px; }
-.evidence-links a, .file-list a { min-width: 0; display: grid; gap: 5px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); text-decoration: none; }
+.evidence-links a, .file-list a, .evidence-link-static { min-width: 0; display: grid; gap: 5px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); text-decoration: none; }
 .evidence-links a:hover span, .file-list a:hover span { color: var(--cool-strong); }
 .evidence-links span, .file-list span { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .evidence-links small, .file-list small { overflow: hidden; color: var(--ink-3); font-family: var(--mono); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }

@@ -14,6 +14,23 @@
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"]/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"
   }[char]));
+  const safeHref = (value) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) return "";
+    try {
+      const parsed = new URL(raw, window.location.href);
+      return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "";
+    } catch (_error) {
+      return "";
+    }
+  };
+  const evidenceLink = ({ url, label, detail }) => {
+    const href = safeHref(url);
+    const body = `<span>${escapeHtml(label)}</span><small>${escapeHtml(detail)}</small>`;
+    return href
+      ? `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${body}</a>`
+      : `<div class="evidence-link-static">${body}</div>`;
+  };
   const compact = (value) => {
     const number = Number(value) || 0;
     if (isEnglish && number >= 1000000) return `${(number / 1000000).toFixed(1)}M`;
@@ -117,7 +134,7 @@
       <section class="evidence-section">
         <header><p class="eyebrow">${t("evidence")}</p><h2>${isEnglish ? (selectedDays.length === 1 ? "Material kept that day" : "Material kept in this period") : (selectedDays.length === 1 ? "这一天留下的资料" : "这段时间留下的资料")}</h2><span>${records.length} ${isEnglish ? "items" : "份"}</span></header>
         <div class="evidence-links">
-          ${records.length ? records.map((record) => `<a href="${escapeHtml(record.url)}"><span>${escapeHtml(record.name)}</span><small>${escapeHtml(record.path)}</small></a>`).join("") : `<p class="evidence-empty">${isEnglish ? "No material was found for this date." : "没有找到以这个日期命名的文档。"}</p>`}
+          ${records.length ? records.map((record) => evidenceLink({ url: record.url, label: record.name, detail: record.path })).join("") : `<p class="evidence-empty">${isEnglish ? "No material was found for this date." : "没有找到以这个日期命名的文档。"}</p>`}
         </div>
       </section>
       <section class="evidence-section">
@@ -129,7 +146,7 @@
       <section class="evidence-section">
         <header><p class="eyebrow">${t("files")} · ${fileTouches} ${isEnglish ? "items" : "条"}</p><h2>${t("links")}</h2><span>${currentFiles.length} ${isEnglish ? "items" : "项"}</span></header>
         <div class="file-list">
-          ${currentFiles.map((file) => `<a href="${escapeHtml(file.url)}"><span>${escapeHtml(file.path)}</span><small>${escapeHtml(file.date)}</small></a>`).join("") || `<p class="evidence-empty">${isEnglish ? "The public edition never reads device files automatically; add a link to your ledger evidence when you want one." : "公开版不会自动读取设备文件；需要时可在账本证据里自行留下链接。"}</p>`}
+          ${currentFiles.map((file) => evidenceLink({ url: file.url, label: file.path, detail: file.date })).join("") || `<p class="evidence-empty">${isEnglish ? "The public edition never reads device files automatically; add a link to your ledger evidence when you want one." : "公开版不会自动读取设备文件；需要时可在账本证据里自行留下链接。"}</p>`}
         </div>
       </section>
       <footer><span>${isEnglish ? "Direct records come from the ledger you choose to import; estimates keep their reason." : "直接记录来自你主动导入的账本；估算会保留理由"}</span><span>${t("localData")}</span></footer>

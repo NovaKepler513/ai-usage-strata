@@ -7,6 +7,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,10 @@ FORBIDDEN = {
     "assigned API key": re.compile(r"(?i)api[_-]?key\s*[:=]\s*\S+"),
 }
 BAD_NAMES = {".DS_Store", ".env"}
+REFERENCE_PATTERNS = (
+    re.compile(r"!?\[[^\]]*\]\(([^)]+)\)"),
+    re.compile(r"(?:href|src)=[\"']([^\"']*)[\"']", re.I),
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,6 +51,18 @@ def files() -> list[Path]:
     return [path for path in ROOT.rglob("*") if path.is_file() and not any(part in EXCLUDED_PARTS for part in path.parts)]
 
 
+def local_reference(source: Path, raw: str) -> Path | None:
+    value = raw.strip().strip("<>")
+    if not value or value.startswith(("#", "data:", "mailto:", "tel:", "javascript:")):
+        return None
+    if re.match(r"^[a-z][a-z0-9+.-]*:", value, re.I) or "${" in value:
+        return None
+    value = unquote(value.split("#", 1)[0].split("?", 1)[0]).strip()
+    if not value:
+        return None
+    return (ROOT / value.lstrip("/")) if value.startswith("/") else (source.parent / value)
+
+
 def main() -> None:
     args = parse_args()
     rules = dict(FORBIDDEN)
@@ -65,6 +82,12 @@ def main() -> None:
         for label, pattern in rules.items():
             if pattern.search(text):
                 findings.append(f"{label}: {relative}")
+        if path.suffix.lower() in {".html", ".md"}:
+            for pattern in REFERENCE_PATTERNS:
+                for match in pattern.finditer(text):
+                    target = local_reference(path, match.group(1))
+                    if target is not None and not target.resolve().exists():
+                        findings.append(f"missing local reference: {relative} -> {match.group(1)}")
     if findings:
         print("Release audit failed:")
         print("\n".join(f"- {finding}" for finding in findings))

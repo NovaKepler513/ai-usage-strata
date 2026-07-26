@@ -417,8 +417,11 @@
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = filename;
+    anchor.hidden = true;
+    document.body.append(anchor);
     anchor.click();
-    URL.revokeObjectURL(url);
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const aiPlatformName = (value) => ({
     codex: t("aiPlatformCodex"), claude: t("aiPlatformClaude"), other: t("aiPlatformOther"), cloud: t("aiPlatformCloud")
@@ -611,7 +614,10 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     if (action === "export") window.AI_USAGE_STRATA_LEDGER?.exportFile();
     if (action === "template") window.AI_USAGE_STRATA_LEDGER?.downloadTemplate();
     if (action === "demo") deferLedgerAction(t("loadingDemo"), control, () => window.AI_USAGE_STRATA_LEDGER?.loadDemo());
-    if (action === "clear") deferLedgerAction(isDemo ? t("leavingDemo") : t("loadingLedger"), control, () => window.AI_USAGE_STRATA_LEDGER?.clear());
+    if (action === "clear") {
+      if (!isDemo && !window.confirm(t("clearConfirm"))) return;
+      deferLedgerAction(isDemo ? t("leavingDemo") : t("loadingLedger"), control, () => window.AI_USAGE_STRATA_LEDGER?.clear());
+    }
     if (action === "guide") root.querySelector("#ledger-guide")?.showModal();
     if (action === "ai-intake") openAIIntake();
   };
@@ -1409,10 +1415,11 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
   };
 
   const renderPresetState = () => {
+    const matchesAll = iso(selectionStart) === iso(historyStart) && iso(selectionEnd) === iso(historyEnd);
     root.querySelectorAll("[data-preset]").forEach((button) => {
       let active = false;
-      if (button.dataset.preset === "reference") active = isReferenceSelection();
-      if (button.dataset.preset === "all") active = iso(selectionStart) === iso(historyStart) && iso(selectionEnd) === iso(historyEnd);
+      if (button.dataset.preset === "reference") active = isReferenceSelection() && !matchesAll;
+      if (button.dataset.preset === "all") active = matchesAll;
       if (button.dataset.preset === "current") active = iso(selectionStart) === iso(monthStart(maxMonth)) && iso(selectionEnd) === iso(historyEnd);
       if (button.dataset.preset === "four-weeks") active = iso(selectionStart) === iso(addDays(historyEnd, -27)) && iso(selectionEnd) === iso(historyEnd);
       button.setAttribute("aria-pressed", String(active));
