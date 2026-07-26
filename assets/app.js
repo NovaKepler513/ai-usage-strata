@@ -146,6 +146,11 @@
   };
   const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
   const aiSpark = `<span class="ai-spark" aria-hidden="true"><svg viewBox="0 0 18 18"><path class="ai-spark-main" d="M9 1.8c.7 4.2 2.1 5.6 6.3 6.3-4.2.7-5.6 2.1-6.3 6.3-.7-4.2-2.1-5.6-6.3-6.3 4.2-.7 5.6-2.1 6.3-6.3Z"/><path class="ai-spark-small" d="M14.5 11.3c.25 1.5.75 2 2.25 2.25-1.5.25-2 .75-2.25 2.25-.25-1.5-.75-2-2.25-2.25 1.5-.25 2-.75 2.25-2.25Z"/></svg></span>`;
+  const copyrightUi = isEnglish ? {
+    trigger: "Open copyright notice", title: "Copyright notice", intro: "The dashboard code is open source. The butterfly is an authorship mark with its own usage boundary.", code: "Code · MIT License", asset: "Hand-drawn butterfly · not covered by MIT", download: "Download full notice", close: "Close"
+  } : {
+    trigger: "打开版权说明", title: "版权说明", intro: "页面代码开源；这枚手绘蝴蝶是作者标记，使用边界单独说明。", code: "页面代码 · MIT License", asset: "手绘蝴蝶 · 不随 MIT 开放", download: "下载完整说明", close: "关闭"
+  };
   const primaryActions = isEmptyLedger ? `
     <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("import")}</button>` : isDemo ? `
@@ -279,11 +284,21 @@
       </main>
 
       <footer class="app-footer">
-        <span class="footer-credit">
+        <button class="copyright-trigger" type="button" data-copyright-trigger aria-haspopup="dialog" aria-controls="copyright-dialog" aria-label="${copyrightUi.trigger}" title="${copyrightUi.trigger}">
           <span class="butterfly-seal" aria-hidden="true"><i></i></span>
-          <span>${t("copyright")}</span>
-        </span>
+        </button>
       </footer>
+      <dialog class="copyright-dialog" id="copyright-dialog" aria-labelledby="copyright-title">
+        <div class="copyright-sheet">
+          <button class="dialog-close" type="button" data-copyright-close aria-label="${copyrightUi.close}" title="${copyrightUi.close}">×</button>
+          <span class="butterfly-seal copyright-seal" aria-hidden="true"><i></i></span>
+          <p class="eyebrow">NOVA KEPLER · TIAN YU VISION</p>
+          <h2 id="copyright-title">${copyrightUi.title}</h2>
+          <p>${copyrightUi.intro}</p>
+          <dl class="copyright-split"><div><dt>${copyrightUi.code}</dt><dd>${t("copyright")}</dd></div><div><dt>${copyrightUi.asset}</dt><dd>© 2026 Nova Kepler</dd></div></dl>
+          <a class="copyright-download" href="NOTICE.md" download="AI-Usage-Strata-Copyright-Notice.md">${copyrightUi.download}</a>
+        </div>
+      </dialog>
       <dialog class="ledger-guide" id="ledger-guide">
         <div>
           <p class="eyebrow">${t("ledgerGuide")}</p>
@@ -380,6 +395,7 @@
   const builderRows = root.querySelector("#builder-rows");
   const tableReview = root.querySelector("#table-review");
   const aiIntake = root.querySelector("#ai-intake");
+  const copyrightDialog = root.querySelector("#copyright-dialog");
   let aiRoute = "prepare";
   const downloadText = (filename, content) => {
     const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
@@ -591,6 +607,13 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     });
   });
   root.querySelector("[data-guide-close]")?.addEventListener("click", () => root.querySelector("#ledger-guide")?.close());
+  root.querySelector("[data-copyright-trigger]")?.addEventListener("click", () => copyrightDialog?.showModal());
+  root.querySelector("[data-copyright-close]")?.addEventListener("click", () => copyrightDialog?.close());
+  copyrightDialog?.addEventListener("click", (event) => {
+    const bounds = copyrightDialog.getBoundingClientRect();
+    const outside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+    if (outside) copyrightDialog.close();
+  });
   root.querySelector("[data-ai-close]")?.addEventListener("click", () => aiIntake?.close());
   aiIntake?.addEventListener("click", (event) => {
     const bounds = aiIntake.getBoundingClientRect();

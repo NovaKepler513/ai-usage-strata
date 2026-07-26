@@ -356,10 +356,29 @@ main { padding-top: 24px; }
 .evidence-estimated span { color: var(--warm-strong); background: color-mix(in srgb, var(--peach) 15%, transparent); }
 .method-copy { padding: 14px 4px 18px; color: var(--ink-3); }
 .method-copy p { margin: 5px 0; font-size: 10px; line-height: 1.6; }
-.app-footer { display: flex; justify-content: center; padding-top: 28px; color: var(--ink-3); font-size: 10px; }
-.footer-credit { display: inline-flex; align-items: center; gap: 8px; }
-.butterfly-seal { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--cool-strong) 25%, var(--line)); border-radius: 50%; color: var(--warm-strong); background: color-mix(in srgb, var(--paper-strong) 86%, transparent); }
-.butterfly-seal i { display: block; width: 14px; height: 14px; background: currentColor; -webkit-mask: url("identity/handdrawn-butterfly-v2.png") center / contain no-repeat; mask: url("identity/handdrawn-butterfly-v2.png") center / contain no-repeat; }
+.app-footer { display: flex; justify-content: center; padding-top: 28px; color: var(--ink-3); }
+.copyright-trigger { width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; opacity: .72; }
+.copyright-trigger:hover { color: var(--ink-2); opacity: 1; }
+.butterfly-seal { width: 15px; height: 15px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: currentColor; background: transparent; }
+.butterfly-seal i { display: block; width: 13px; height: 13px; background: currentColor; -webkit-mask: url("identity/handdrawn-butterfly-v2.png") center / 128% no-repeat; mask: url("identity/handdrawn-butterfly-v2.png") center / 128% no-repeat; }
+.copyright-dialog { width: min(440px, calc(100vw - 32px)); padding: 0; border: 0; background: transparent; color: var(--ink); }
+.copyright-dialog::backdrop { background: color-mix(in srgb, var(--ink) 38%, transparent); backdrop-filter: blur(5px); }
+.copyright-sheet { position: relative; padding: 28px; border: 1px solid color-mix(in srgb, var(--cool-strong) 24%, var(--line)); border-radius: 18px; background: radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--peach) 11%, transparent), transparent 36%), var(--paper); box-shadow: var(--shadow); }
+.copyright-sheet .eyebrow { margin: 16px 0 6px; font-size: 9px; }
+.copyright-sheet h2 { margin: 0; font-size: 25px; font-weight: 560; letter-spacing: -0.035em; }
+.copyright-sheet > p { margin: 12px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.7; }
+.copyright-seal { width: 25px; height: 25px; }
+.copyright-seal i { width: 22px; height: 22px; }
+.dialog-close { position: absolute; top: 14px; right: 15px; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: var(--ink-3); font-size: 22px; line-height: 1; cursor: pointer; }
+.dialog-close:hover { color: var(--ink); }
+.copyright-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0; }
+.copyright-split div { padding-top: 10px; border-top: 2px solid var(--line); }
+.copyright-split div:first-child { border-color: var(--cool); }
+.copyright-split div:last-child { border-color: var(--peach); }
+.copyright-split dt { color: var(--ink-2); font-size: 10px; font-weight: 600; }
+.copyright-split dd { margin: 6px 0 0; color: var(--ink-3); font-family: var(--mono); font-size: 9px; line-height: 1.5; }
+.copyright-download { display: inline-flex; align-items: center; min-height: 32px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink-2); font-size: 11px; font-weight: 600; text-decoration: none; }
+.copyright-download:hover { border-color: var(--cool); color: var(--cool-strong); }
 
 .evidence-shell { width: min(920px, calc(100% - 48px)); margin: 0 auto; padding-bottom: 64px; }
 .evidence-topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
@@ -460,6 +479,8 @@ main { padding-top: 24px; }
   .nav-support .ledger-action { padding: 8px 4px; }
   .ledger-action { padding: 8px; font-size: 10px; }
   .language-switch { padding: 7px 3px; }
+  .copyright-sheet { padding: 24px; }
+  .copyright-split { grid-template-columns: 1fr; }
   main { padding-top: 16px; }
   .command-bar { grid-template-columns: 1fr; gap: 10px; }
   .range-labels { grid-template-columns: 1fr 1fr; gap: 18px; }
