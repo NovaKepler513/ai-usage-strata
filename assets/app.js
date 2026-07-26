@@ -1434,7 +1434,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
           <button type="button" data-view="back" aria-pressed="false">${t("viewBack")}</button>
           <button type="button" data-view="top" aria-pressed="false">${t("viewTop")}</button>
         </div>
-        <canvas id="waterfall-canvas" role="img" aria-label="${escapeHtml(metric.label)}瀑布图。可以切换视角，也可以拖动旋转、滚轮缩放；点击山脊上的日期刻痕可查看当天记录。"></canvas>
+        <canvas id="waterfall-canvas" role="img" aria-label="${escapeHtml(t("waterfallAria", { metric: metric.label }))}"></canvas>
         <div class="model-hud"><span>${t("canvasHint")}</span><button id="model-reset" type="button">${t("resetView")}</button></div>
       </div>`;
     mountWaterfallModel({ ridges, granularity, slots, metric, maximum });
