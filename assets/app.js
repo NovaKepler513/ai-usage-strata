@@ -185,6 +185,20 @@
   const ledgerActions = `
     <div class="nav-group nav-primary">${primaryActions}</div>
     <div class="nav-group nav-support">${supportActions}</div>`;
+  const dateControl = (target, label) => `
+    <div class="date-control" data-date-control="${target}">
+      <div class="date-roller" aria-label="${label}">
+        ${["year", "month", "day"].map((part) => `<span>
+          <button type="button" data-date-step="${target}" data-date-part="${part}" data-date-delta="1" aria-label="${label} ${part} up">⌃</button>
+          <button class="date-value" id="${target}-${part}" type="button" data-date-open="${target}" aria-expanded="false" aria-controls="${target}-date-wheel"></button>
+          <button type="button" data-date-step="${target}" data-date-part="${part}" data-date-delta="-1" aria-label="${label} ${part} down">⌄</button>
+        </span>`).join("")}
+      </div>
+      <div class="date-wheel-panel" id="${target}-date-wheel" data-date-wheel-panel="${target}" hidden>
+        <div class="date-wheel-columns"></div>
+        <p>${t("dateWheelHint")}</p>
+      </div>
+    </div>`;
 
   root.innerHTML = `
     <div class="report-shell" data-metric="time" data-ledger-state="${hasRecords ? (isDemo ? "demo" : "ledger") : "empty"}">
@@ -216,18 +230,11 @@
           <div class="range-selectors">
             <div class="range-labels"><span>${t("startDate")}</span><span>${t("endDate")}</span></div>
             <div class="range-fields">
-              <div class="date-roller" aria-label="${t("startDate")}">
-                <span><button type="button" data-date-step="start" data-date-part="year" data-date-delta="1" aria-label="${t("startDate")} year up">⌃</button><b id="start-year"></b><button type="button" data-date-step="start" data-date-part="year" data-date-delta="-1" aria-label="${t("startDate")} year down">⌄</button></span>
-                <span><button type="button" data-date-step="start" data-date-part="month" data-date-delta="1" aria-label="${t("startDate")} month up">⌃</button><b id="start-month"></b><button type="button" data-date-step="start" data-date-part="month" data-date-delta="-1" aria-label="${t("startDate")} month down">⌄</button></span>
-                <span><button type="button" data-date-step="start" data-date-part="day" data-date-delta="1" aria-label="${t("startDate")} day up">⌃</button><b id="start-day"></b><button type="button" data-date-step="start" data-date-part="day" data-date-delta="-1" aria-label="${t("startDate")} day down">⌄</button></span>
-              </div>
+              ${dateControl("start", t("startDate"))}
               <i aria-hidden="true"></i>
-              <div class="date-roller" aria-label="${t("endDate")}">
-                <span><button type="button" data-date-step="end" data-date-part="year" data-date-delta="1" aria-label="${t("endDate")} year up">⌃</button><b id="end-year"></b><button type="button" data-date-step="end" data-date-part="year" data-date-delta="-1" aria-label="${t("endDate")} year down">⌄</button></span>
-                <span><button type="button" data-date-step="end" data-date-part="month" data-date-delta="1" aria-label="${t("endDate")} month up">⌃</button><b id="end-month"></b><button type="button" data-date-step="end" data-date-part="month" data-date-delta="-1" aria-label="${t("endDate")} month down">⌄</button></span>
-                <span><button type="button" data-date-step="end" data-date-part="day" data-date-delta="1" aria-label="${t("endDate")} day up">⌃</button><b id="end-day"></b><button type="button" data-date-step="end" data-date-part="day" data-date-delta="-1" aria-label="${t("endDate")} day down">⌄</button></span>
-              </div>
+              ${dateControl("end", t("endDate"))}
             </div>
+            <p class="date-range-alert" id="date-range-alert" role="status" aria-live="polite" hidden></p>
           </div>
           <div class="range-presets" aria-label="${t("quickRange")}">
             ${referenceWindow ? `<button type="button" data-preset="reference">${t("referencePeriod")}</button>` : ""}
@@ -725,12 +732,37 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
     root.querySelector("#end-day").textContent = isEnglish ? pad(selectionEnd.getDate()) : `${pad(selectionEnd.getDate())} 日`;
   };
 
-  const setSelection = (start, end) => {
-    selectionStart = start < historyStart ? new Date(historyStart) : (start > historyEnd ? new Date(historyEnd) : start);
-    selectionEnd = end < historyStart ? new Date(historyStart) : (end > historyEnd ? new Date(historyEnd) : end);
-    if (selectionStart > selectionEnd) selectionEnd = new Date(selectionStart);
+  const clearDateError = () => {
+    const alert = root.querySelector("#date-range-alert");
+    if (alert) alert.hidden = true;
+    root.querySelectorAll(".date-control.is-invalid").forEach((control) => control.classList.remove("is-invalid"));
+  };
+
+  const showDateError = (target) => {
+    const alert = root.querySelector("#date-range-alert");
+    if (!alert) return;
+    alert.textContent = t(target === "end" ? "endBeforeStart" : "startAfterEnd");
+    alert.hidden = false;
+    const control = root.querySelector(`[data-date-control="${target}"]`);
+    control?.classList.remove("is-invalid");
+    requestAnimationFrame(() => control?.classList.add("is-invalid"));
+  };
+
+  const boundDate = (value) => value < historyStart ? new Date(historyStart) : (value > historyEnd ? new Date(historyEnd) : value);
+
+  const setSelection = (start, end, target = "") => {
+    const nextStart = boundDate(start);
+    const nextEnd = boundDate(end);
+    if (nextStart > nextEnd) {
+      showDateError(target || "end");
+      return false;
+    }
+    selectionStart = nextStart;
+    selectionEnd = nextEnd;
+    clearDateError();
     syncInputs();
     render();
+    return true;
   };
 
   const stepDate = (target, part, delta) => {
@@ -744,7 +776,7 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
       next.setDate(Math.min(day, lastDay));
     }
     if (part === "day") next.setDate(next.getDate() + delta);
-    setSelection(target === "start" ? next : selectionStart, target === "end" ? next : selectionEnd);
+    setSelection(target === "start" ? next : selectionStart, target === "end" ? next : selectionEnd, target);
   };
   root.querySelectorAll("[data-date-step]").forEach((button) => {
     button.addEventListener("click", () => stepDate(button.dataset.dateStep, button.dataset.datePart, Number(button.dataset.dateDelta)));
@@ -755,6 +787,103 @@ JSON 完成后，我会先检查，再导入 AI Usage Strata。不要把它上�
       const button = roller.querySelector("[data-date-step]");
       stepDate(button.dataset.dateStep, button.dataset.datePart, event.deltaY < 0 ? 1 : -1);
     }, { passive: false });
+  });
+
+  const dateFor = (target) => target === "start" ? selectionStart : selectionEnd;
+  const daysInMonth = (year, month) => new Date(year, month, 0).getDate();
+  const range = (start, end) => Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
+  const wheelValues = (target, part) => {
+    const value = dateFor(target);
+    const year = value.getFullYear();
+    const month = value.getMonth() + 1;
+    if (part === "year") return range(historyStart.getFullYear(), historyEnd.getFullYear());
+    if (part === "month") {
+      const first = year === historyStart.getFullYear() ? historyStart.getMonth() + 1 : 1;
+      const last = year === historyEnd.getFullYear() ? historyEnd.getMonth() + 1 : 12;
+      return range(first, last);
+    }
+    const first = year === historyStart.getFullYear() && month === historyStart.getMonth() + 1 ? historyStart.getDate() : 1;
+    const last = year === historyEnd.getFullYear() && month === historyEnd.getMonth() + 1 ? historyEnd.getDate() : daysInMonth(year, month);
+    return range(first, last);
+  };
+  const selectedPart = (date, part) => part === "year" ? date.getFullYear() : (part === "month" ? date.getMonth() + 1 : date.getDate());
+  const wheelLabel = (part, value) => part === "year" ? String(value) : (isEnglish ? pad(value) : `${pad(value)} ${part === "month" ? "月" : "日"}`);
+  const renderDateWheel = (target) => {
+    const panel = root.querySelector(`[data-date-wheel-panel="${target}"]`);
+    if (!panel) return;
+    const date = dateFor(target);
+    panel.querySelector(".date-wheel-columns").innerHTML = ["year", "month", "day"].map((part) => `
+      <section class="date-wheel-column">
+        <span>${t(part === "year" ? "dateYear" : (part === "month" ? "dateMonth" : "dateDay"))}</span>
+        <div class="date-wheel-list" role="listbox" aria-label="${t(part === "year" ? "dateYear" : (part === "month" ? "dateMonth" : "dateDay"))}" data-date-wheel="${target}" data-date-part="${part}" tabindex="0">
+          ${wheelValues(target, part).map((value) => `<button type="button" role="option" data-date-option="${value}" aria-selected="${value === selectedPart(date, part)}">${wheelLabel(part, value)}</button>`).join("")}
+        </div>
+      </section>`).join("");
+    requestAnimationFrame(() => panel.querySelectorAll('[aria-selected="true"]').forEach((option) => option.scrollIntoView({ block: "center" })));
+  };
+  const chooseDatePart = (target, part, value) => {
+    const current = dateFor(target);
+    const next = new Date(current);
+    const day = current.getDate();
+    next.setDate(1);
+    if (part === "year") next.setFullYear(value);
+    if (part === "month") next.setMonth(value - 1);
+    next.setDate(part === "day" ? value : Math.min(day, daysInMonth(next.getFullYear(), next.getMonth() + 1)));
+    const changed = setSelection(target === "start" ? next : selectionStart, target === "end" ? next : selectionEnd, target);
+    renderDateWheel(target);
+    return changed;
+  };
+  const closeDateWheels = (except = "") => {
+    root.querySelectorAll("[data-date-wheel-panel]").forEach((panel) => {
+      if (panel.dataset.dateWheelPanel === except) return;
+      panel.hidden = true;
+      root.querySelectorAll(`[data-date-open="${panel.dataset.dateWheelPanel}"]`).forEach((button) => button.setAttribute("aria-expanded", "false"));
+    });
+  };
+  root.querySelectorAll("[data-date-open]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const target = button.dataset.dateOpen;
+      const panel = root.querySelector(`[data-date-wheel-panel="${target}"]`);
+      const willOpen = panel.hidden;
+      closeDateWheels(willOpen ? target : "");
+      panel.hidden = !willOpen;
+      root.querySelectorAll(`[data-date-open="${target}"]`).forEach((item) => item.setAttribute("aria-expanded", String(willOpen)));
+      if (willOpen) renderDateWheel(target);
+    });
+  });
+  root.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-date-option]");
+    if (option) {
+      const list = option.closest("[data-date-wheel]");
+      chooseDatePart(list.dataset.dateWheel, list.dataset.datePart, Number(option.dataset.dateOption));
+      return;
+    }
+    if (!event.target.closest(".date-control")) closeDateWheels();
+  });
+  root.addEventListener("wheel", (event) => {
+    const list = event.target.closest("[data-date-wheel]");
+    if (!list) return;
+    event.preventDefault();
+    const values = wheelValues(list.dataset.dateWheel, list.dataset.datePart);
+    const current = selectedPart(dateFor(list.dataset.dateWheel), list.dataset.datePart);
+    const index = Math.max(0, values.indexOf(current));
+    chooseDatePart(list.dataset.dateWheel, list.dataset.datePart, values[Math.max(0, Math.min(values.length - 1, index + (event.deltaY > 0 ? 1 : -1)))]);
+  }, { passive: false });
+  root.addEventListener("touchend", (event) => {
+    const list = event.target.closest("[data-date-wheel]");
+    if (!list) return;
+    const center = list.getBoundingClientRect().top + list.clientHeight / 2;
+    const options = [...list.querySelectorAll("[data-date-option]")];
+    const nearest = options.reduce((best, option) => {
+      const rect = option.getBoundingClientRect();
+      const distance = Math.abs(rect.top + rect.height / 2 - center);
+      return !best || distance < best.distance ? { option, distance } : best;
+    }, null)?.option;
+    if (nearest) chooseDatePart(list.dataset.dateWheel, list.dataset.datePart, Number(nearest.dataset.dateOption));
+  }, { passive: true });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDateWheels();
   });
 
   const weeklyGroups = (days) => [...groupDays(days, (item) => {
