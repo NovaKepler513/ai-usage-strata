@@ -145,6 +145,7 @@
     return mixColor(ridgePalette[start], ridgePalette[end], scaled - start);
   };
   const colorString = ([red, green, blue], alpha = 1) => `rgb(${red} ${green} ${blue} / ${alpha})`;
+  const aiSpark = `<span class="ai-spark" aria-hidden="true"><svg viewBox="0 0 18 18"><path class="ai-spark-main" d="M9 1.8c.7 4.2 2.1 5.6 6.3 6.3-4.2.7-5.6 2.1-6.3 6.3-.7-4.2-2.1-5.6-6.3-6.3 4.2-.7 5.6-2.1 6.3-6.3Z"/><path class="ai-spark-small" d="M14.5 11.3c.25 1.5.75 2 2.25 2.25-1.5.25-2 .75-2.25 2.25-.25-1.5-.75-2-2.25-2.25 1.5-.25 2-.75 2.25-2.25Z"/></svg></span>`;
   const primaryActions = isEmptyLedger ? `
     <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("startLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("import")}</button>` : isDemo ? `
@@ -153,10 +154,10 @@
     <button class="ledger-action nav-primary-action" type="button" data-ledger-action="builder">${t("enterLedger")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="import">${t("replaceLedger")}</button>`;
   const supportActions = isEmptyLedger ? `
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
+    <button class="ledger-action ledger-action-quiet ai-action" type="button" data-ledger-action="ai-intake">${aiSpark}${t("aiIntake")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="demo">${t("viewDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : isDemo ? `
-    <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
+    <button class="ledger-action ledger-action-quiet ai-action" type="button" data-ledger-action="ai-intake">${aiSpark}${t("aiIntake")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="clear">${t("exitDemo")}</button>
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="guide">${t("ledgerGuide")}</button>` : `
     <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="export">${t("downloadCurrent")}</button>
@@ -296,7 +297,7 @@
           </ol>
           <p class="guide-export">${t("guideExport")}</p>
           <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="template">${t("downloadTemplate")}</button>
-          <button class="ledger-action ledger-action-quiet" type="button" data-ledger-action="ai-intake">${t("aiIntake")}</button>
+          <button class="ledger-action ledger-action-quiet ai-action" type="button" data-ledger-action="ai-intake">${aiSpark}${t("aiIntake")}</button>
           <button class="ledger-action" type="button" data-guide-close>${t("guideClose")}</button>
         </div>
       </dialog>
